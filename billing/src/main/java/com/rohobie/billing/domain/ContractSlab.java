@@ -10,6 +10,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "contract_slab")
 public class ContractSlab {
@@ -31,61 +42,10 @@ public class ContractSlab {
     @Column(name = "rate_per_km_paisa", nullable = false)
     private long ratePerKmPaisa;
 
-    public ContractSlab() {
-    }
-
-    public ContractSlab(Long id, Contract contract, int fromKm, Integer toKm, long ratePerKmPaisa) {
-        this.id = id;
-        this.contract = contract;
-        this.fromKm = fromKm;
-        this.toKm = toKm;
-        this.ratePerKmPaisa = ratePerKmPaisa;
-    }
-
     public ContractSlab(Contract contract, int fromKm, Integer toKm, long ratePerKmPaisa) {
         this.contract = contract;
         this.fromKm = fromKm;
         this.toKm = toKm;
-        this.ratePerKmPaisa = ratePerKmPaisa;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Contract getContract() {
-        return contract;
-    }
-
-    public void setContract(Contract contract) {
-        this.contract = contract;
-    }
-
-    public int getFromKm() {
-        return fromKm;
-    }
-
-    public void setFromKm(int fromKm) {
-        this.fromKm = fromKm;
-    }
-
-    public Integer getToKm() {
-        return toKm;
-    }
-
-    public void setToKm(Integer toKm) {
-        this.toKm = toKm;
-    }
-
-    public long getRatePerKmPaisa() {
-        return ratePerKmPaisa;
-    }
-
-    public void setRatePerKmPaisa(long ratePerKmPaisa) {
         this.ratePerKmPaisa = ratePerKmPaisa;
     }
 }

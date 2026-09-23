@@ -17,8 +17,10 @@ import com.rohobie.billing.repository.BillingRunRepository;
 import com.rohobie.billing.repository.FraudFlagRepository;
 import com.rohobie.billing.repository.TripRepository;
 import com.rohobie.billing.repository.VehicleRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.rohobie.billing.config.MetricsConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,10 +45,9 @@ import java.util.stream.Collectors;
  * Assumption: Billing month is formatted as YYYY-MM.
  * Design decision: Query-before-write idempotency key on (vehicleId, billingMonth).
  */
+@Slf4j
 @Service
 public class BillingRunService {
-
-    private static final Logger logger = LoggerFactory.getLogger(BillingRunService.class);
 
     private final BillingRunRepository billingRunRepository;
     private final BillLineItemRepository billLineItemRepository;
@@ -57,7 +58,7 @@ public class BillingRunService {
     private final ContractLookupService contractLookupService;
     private final FixedFeeSplitService fixedFeeSplitService;
     private final FraudDetectionService fraudDetectionService;
-    private final com.rohobie.billing.config.MetricsConfig metricsConfig;
+    private final MetricsConfig metricsConfig;
 
     public BillingRunService(BillingRunRepository billingRunRepository,
                              BillLineItemRepository billLineItemRepository,
@@ -68,7 +69,7 @@ public class BillingRunService {
                              ContractLookupService contractLookupService,
                              FixedFeeSplitService fixedFeeSplitService,
                              FraudDetectionService fraudDetectionService,
-                             com.rohobie.billing.config.MetricsConfig metricsConfig) {
+                             MetricsConfig metricsConfig) {
         this.billingRunRepository = billingRunRepository;
         this.billLineItemRepository = billLineItemRepository;
         this.fraudFlagRepository = fraudFlagRepository;
@@ -88,11 +89,11 @@ public class BillingRunService {
      * @param billingMonth the billing period in YYYY-MM format
      * @return BillingRunSummary containing run status, item count, and grand total in paisa
      */
-    @org.springframework.cache.annotation.CacheEvict(value = "billingSummaries", allEntries = true)
+    @CacheEvict(value = "billingSummaries", allEntries = true)
     @Transactional
     public BillingRunSummary runBilling(Long vehicleId, String billingMonth) {
         long startTimeNanos = System.nanoTime();
-        logger.info("Starting billing run for vehicle ID: {} and month: {}", vehicleId, billingMonth);
+        log.info("Starting billing run for vehicle ID: {} and month: {}", vehicleId, billingMonth);
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle with id " + vehicleId + " not found"));
@@ -111,7 +112,7 @@ public class BillingRunService {
         if (existingRunOpt.isPresent()) {
             BillingRun existingRun = existingRunOpt.get();
             if (existingRun.getStatus() == BillingRunStatus.COMPLETED) {
-                logger.info("Idempotent hit: COMPLETED billing run {} already exists for vehicle {} and month {}; returning existing summary",
+                log.info("Idempotent hit: COMPLETED billing run {} already exists for vehicle {} and month {}; returning existing summary",
                         existingRun.getId(), vehicleId, billingMonth);
                 List<BillLineItem> existingItems = billLineItemRepository.findByBillingRunId(existingRun.getId());
                 long grandTotalPaisa = existingItems.stream().mapToLong(BillLineItem::getTotalPaisa).sum();
@@ -120,7 +121,7 @@ public class BillingRunService {
             }
 
             // Stale or failed run: clear previous line items and fraud flags, reset to PENDING
-            logger.info("Retrying existing {} billing run ID: {}; resetting stale line items",
+            log.info("Retrying existing {} billing run ID: {}; resetting stale line items",
                     existingRun.getStatus(), existingRun.getId());
             billLineItemRepository.deleteByBillingRunId(existingRun.getId());
             fraudFlagRepository.deleteByBillingRunId(existingRun.getId());
@@ -193,7 +194,7 @@ public class BillingRunService {
         billingRunRepository.save(billingRun);
 
         long grandTotalPaisa = lineItems.stream().mapToLong(BillLineItem::getTotalPaisa).sum();
-        logger.info("Completed billing run ID: {} for vehicle ID: {} with grand total: {} paisa across {} items",
+        log.info("Completed billing run ID: {} for vehicle ID: {} with grand total: {} paisa across {} items",
                 billingRun.getId(), vehicleId, grandTotalPaisa, lineItems.size());
 
         if (metricsConfig != null) {
@@ -246,7 +247,7 @@ public class BillingRunService {
      * @param runId the billing run identifier
      * @return BillingRunSummary DTO
      */
-    @org.springframework.cache.annotation.Cacheable(value = "billingSummaries", key = "#runId")
+    @Cacheable(value = "billingSummaries", key = "#runId")
     @Transactional(readOnly = true)
     public BillingRunSummary getBillingRunSummary(Long runId) {
         BillingRun billingRun = billingRunRepository.findById(runId)

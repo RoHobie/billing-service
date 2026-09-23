@@ -6,8 +6,7 @@ import com.rohobie.billing.repository.BillingRunRepository;
 import com.rohobie.billing.repository.FraudFlagRepository;
 import com.rohobie.billing.repository.VehicleRepository;
 import com.rohobie.billing.repository.VendorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +19,9 @@ import java.lang.management.ManagementFactory;
  * Provides live business performance metrics including active fleet size, billed revenue,
  * anomaly volumes, and JVM memory utilization.
  */
+@Slf4j
 @Service
 public class MonitoringService {
-
-    private static final Logger logger = LoggerFactory.getLogger(MonitoringService.class);
 
     private final VehicleRepository vehicleRepository;
     private final VendorRepository vendorRepository;
@@ -50,7 +48,7 @@ public class MonitoringService {
      */
     @Transactional(readOnly = true)
     public SystemStatsResponse getSystemStats() {
-        logger.debug("Compiling system telemetry metrics");
+        log.debug("Compiling system telemetry metrics");
 
         long totalVehicles = vehicleRepository.count();
         long totalVendors = vendorRepository.count();

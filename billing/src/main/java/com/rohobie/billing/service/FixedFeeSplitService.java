@@ -1,8 +1,8 @@
 package com.rohobie.billing.service;
 
 import com.rohobie.billing.domain.Trip;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,14 +25,14 @@ import java.util.stream.Collectors;
  * Design decision: Largest Remainder chosen over round-robin for determinism
  * across idempotent re-runs.
  */
+@Slf4j
 @Service
 public class FixedFeeSplitService {
-
-    private static final Logger logger = LoggerFactory.getLogger(FixedFeeSplitService.class);
 
     /**
      * Internal container holding intermediate calculation state for each trip.
      */
+    @Getter
     private static class TripShareCalculation {
         private final Trip trip;
         private final long floorShare;
@@ -46,20 +46,8 @@ public class FixedFeeSplitService {
             this.finalShare = floorShare;
         }
 
-        Trip getTrip() {
-            return trip;
-        }
-
-        BigDecimal getFractionalRemainder() {
-            return fractionalRemainder;
-        }
-
         void incrementShare() {
             this.finalShare++;
-        }
-
-        long getFinalShare() {
-            return finalShare;
         }
     }
 
@@ -73,19 +61,19 @@ public class FixedFeeSplitService {
      */
     public Map<Long, Long> split(long contractAmountPaisa, List<Trip> trips) {
         if (trips == null || trips.isEmpty()) {
-            logger.warn("Attempted to split fixed fee of {} paisa across null or empty trip list", contractAmountPaisa);
+            log.warn("Attempted to split fixed fee of {} paisa across null or empty trip list", contractAmountPaisa);
             return Collections.emptyMap();
         }
 
         if (contractAmountPaisa == 0L) {
-            logger.debug("Contract amount is 0 paisa; all {} trips receive 0 paisa share", trips.size());
+            log.debug("Contract amount is 0 paisa; all {} trips receive 0 paisa share", trips.size());
             return trips.stream()
                     .collect(Collectors.toMap(Trip::getId, trip -> 0L, (a, b) -> a, LinkedHashMap::new));
         }
 
         if (trips.size() == 1) {
             Trip singleTrip = trips.get(0);
-            logger.debug("Single trip present (ID: {}); allocating full contract amount {} paisa",
+            log.debug("Single trip present (ID: {}); allocating full contract amount {} paisa",
                     singleTrip.getId(), contractAmountPaisa);
             return Map.of(singleTrip.getId(), contractAmountPaisa);
         }
@@ -98,7 +86,7 @@ public class FixedFeeSplitService {
 
         // Handle edge case where all trips have 0 km distance
         if (totalDutyKm == 0L) {
-            logger.debug("Total duty km across all {} trips is 0; splitting equally across trips", trips.size());
+            log.debug("Total duty km across all {} trips is 0; splitting equally across trips", trips.size());
             return splitEqually(contractAmountPaisa, trips);
         }
 
@@ -145,7 +133,7 @@ public class FixedFeeSplitService {
                     totalDistributedPaisa, contractAmountPaisa));
         }
 
-        logger.debug("Successfully split {} paisa across {} trips; sum matches exactly",
+        log.debug("Successfully split {} paisa across {} trips; sum matches exactly",
                 contractAmountPaisa, trips.size());
         return resultMap;
     }

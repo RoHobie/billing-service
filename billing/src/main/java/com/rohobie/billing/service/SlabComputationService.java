@@ -5,13 +5,11 @@ import com.rohobie.billing.domain.ContractSlab;
 import com.rohobie.billing.domain.ContractType;
 import com.rohobie.billing.domain.Trip;
 import com.rohobie.billing.repository.ContractSlabRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -24,10 +22,9 @@ import java.util.List;
  * Assumption: Free km reduce the billable distance before walking the rate slabs.
  * Design decision: Strict long-precision integer arithmetic to avoid floating-point errors.
  */
+@Slf4j
 @Service
 public class SlabComputationService {
-
-    private static final Logger logger = LoggerFactory.getLogger(SlabComputationService.class);
 
     private final ContractSlabRepository contractSlabRepository;
 
@@ -45,12 +42,12 @@ public class SlabComputationService {
     @Transactional(readOnly = true)
     public long compute(Trip trip, Contract contract) {
         if (contract.getContractType() == ContractType.PER_TRIP) {
-            logger.debug("PER_TRIP contract type; returning flat base amount: {} paisa", contract.getBaseAmountPaisa());
+            log.debug("PER_TRIP contract type; returning flat base amount: {} paisa", contract.getBaseAmountPaisa());
             return contract.getBaseAmountPaisa();
         }
 
         if (contract.getContractType() == ContractType.FIXED_MONTHLY) {
-            logger.debug("FIXED_MONTHLY contract type; base fare is 0 paisa (split in month-end billing run)");
+            log.debug("FIXED_MONTHLY contract type; base fare is 0 paisa (split in month-end billing run)");
             return 0L;
         }
 
@@ -61,9 +58,7 @@ public class SlabComputationService {
             return 0L;
         }
 
-        List<ContractSlab> slabs = new ArrayList<>(contractSlabRepository.findByContractIdOrderByFromKmAsc(contract.getId()));
-        // Sort by fromKm to ensure we walk slabs in the correct ascending order
-        slabs.sort(Comparator.comparingInt(ContractSlab::getFromKm));
+        List<ContractSlab> slabs = contractSlabRepository.findByContractIdOrderByFromKmAsc(contract.getId());
 
         long runningTotal = 0L;
         for (ContractSlab slab : slabs) {
@@ -82,7 +77,7 @@ public class SlabComputationService {
 
             if (kmInThisSlab > 0) {
                 long slabCost = (long) kmInThisSlab * slab.getRatePerKmPaisa();
-                logger.debug("Slab [{} - {}]: {} km @ {} paisa/km = {} paisa",
+                log.debug("Slab [{} - {}]: {} km @ {} paisa/km = {} paisa",
                         slab.getFromKm(), slab.getToKm(), kmInThisSlab, slab.getRatePerKmPaisa(), slabCost);
                 runningTotal += slabCost;
             }
@@ -113,8 +108,7 @@ public class SlabComputationService {
             return "PER_KM: 0 billable km (freeKm=" + contract.getFreeKm() + ") = 0p";
         }
 
-        List<ContractSlab> slabs = new ArrayList<>(contractSlabRepository.findByContractIdOrderByFromKmAsc(contract.getId()));
-        slabs.sort(Comparator.comparingInt(ContractSlab::getFromKm));
+        List<ContractSlab> slabs = contractSlabRepository.findByContractIdOrderByFromKmAsc(contract.getId());
 
         StringBuilder sb = new StringBuilder("PER_KM: ");
         List<String> segments = new ArrayList<>();

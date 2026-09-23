@@ -7,8 +7,7 @@ import com.rohobie.billing.dto.response.TripResponse;
 import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.TripRepository;
 import com.rohobie.billing.repository.VehicleRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Design decision: Links each trip to a registered vehicle and preserves
  * dead-leg, waiting time, and night flags for downstream billing.
  */
+@Slf4j
 @Service
 public class TripService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TripService.class);
 
     private final TripRepository tripRepository;
     private final VehicleRepository vehicleRepository;
@@ -35,7 +33,7 @@ public class TripService {
     /** Records a new trip for a vehicle. */
     @Transactional
     public TripResponse createTrip(TripRequest request) {
-        logger.info("Recording trip for vehicle ID: {} distance: {}km", request.vehicleId(), request.distanceKm());
+        log.info("Recording trip for vehicle ID: {} distance: {}km", request.vehicleId(), request.distanceKm());
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle with id " + request.vehicleId() + " not found"));
 

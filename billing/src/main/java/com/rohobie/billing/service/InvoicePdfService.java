@@ -14,8 +14,7 @@ import com.rohobie.billing.domain.BillingRun;
 import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.BillLineItemRepository;
 import com.rohobie.billing.repository.BillingRunRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +35,9 @@ import java.util.List;
  * Assumption: Standard A4 page orientation accommodates itemised trip records.
  * Design decision: Monetary values rendered via scale-2 BigDecimal formatting to maintain strict precision.
  */
+@Slf4j
 @Service
 public class InvoicePdfService {
-
-    private static final Logger logger = LoggerFactory.getLogger(InvoicePdfService.class);
 
     private static final Font TITLE_FONT = new Font(Font.HELVETICA, 18, Font.BOLD, new Color(30, 41, 59));
     private static final Font SUBTITLE_FONT = new Font(Font.HELVETICA, 10, Font.NORMAL, new Color(100, 116, 139));
@@ -66,7 +64,7 @@ public class InvoicePdfService {
      */
     @Transactional(readOnly = true)
     public byte[] generateInvoicePdf(Long billingRunId) {
-        logger.info("Generating corporate PDF invoice for billing run ID: {}", billingRunId);
+        log.info("Generating corporate PDF invoice for billing run ID: {}", billingRunId);
 
         BillingRun run = billingRunRepository.findById(billingRunId)
                 .orElseThrow(() -> new ResourceNotFoundException("Billing run with id " + billingRunId + " not found"));
@@ -182,7 +180,7 @@ public class InvoicePdfService {
 
             document.close();
         } catch (Exception ex) {
-            logger.error("Failed to compile PDF document for billing run ID: {}", billingRunId, ex);
+            log.error("Failed to compile PDF document for billing run ID: {}", billingRunId, ex);
             throw new RuntimeException("Error generating invoice PDF: " + ex.getMessage(), ex);
         }
 

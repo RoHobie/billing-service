@@ -5,6 +5,7 @@ import com.rohobie.billing.dto.response.ApiResponse;
 import com.rohobie.billing.dto.response.ContractResponse;
 import com.rohobie.billing.service.ContractService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,15 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/contracts")
 public class ContractController {
 
     private final ContractService contractService;
-
-    public ContractController(ContractService contractService) {
-        this.contractService = contractService;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ContractResponse>> createContract(@Valid @RequestBody ContractRequest request) {

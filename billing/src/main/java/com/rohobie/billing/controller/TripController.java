@@ -5,6 +5,7 @@ import com.rohobie.billing.dto.response.ApiResponse;
 import com.rohobie.billing.dto.response.TripResponse;
 import com.rohobie.billing.service.TripService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,15 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/trips")
 public class TripController {
 
     private final TripService tripService;
-
-    public TripController(TripService tripService) {
-        this.tripService = tripService;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<TripResponse>> createTrip(@Valid @RequestBody TripRequest request) {

@@ -5,10 +5,11 @@ import com.rohobie.billing.dto.request.VendorRequest;
 import com.rohobie.billing.dto.response.VendorResponse;
 import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.VendorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * VendorService
@@ -17,10 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Design decision: Basic CRUD operations encapsulated in service layer
  * to ensure controllers remain strictly HTTP-facing.
  */
+@Slf4j
 @Service
 public class VendorService {
-
-    private static final Logger logger = LoggerFactory.getLogger(VendorService.class);
 
     private final VendorRepository vendorRepository;
 
@@ -31,7 +31,7 @@ public class VendorService {
     /** Creates a new vendor from the given request. */
     @Transactional
     public VendorResponse createVendor(VendorRequest request) {
-        logger.info("Creating vendor with name: {}", request.name());
+        log.info("Creating vendor with name: {}", request.name());
         Vendor vendor = new Vendor(request.name(), request.contactEmail());
         Vendor saved = vendorRepository.save(vendor);
         return mapToResponse(saved);
@@ -47,7 +47,7 @@ public class VendorService {
 
     /** Retrieves all registered vendors. */
     @Transactional(readOnly = true)
-    public java.util.List<VendorResponse> getAllVendors() {
+    public List<VendorResponse> getAllVendors() {
         return vendorRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .toList();

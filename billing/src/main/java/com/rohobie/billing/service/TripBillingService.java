@@ -3,8 +3,7 @@ package com.rohobie.billing.service;
 import com.rohobie.billing.domain.Contract;
 import com.rohobie.billing.domain.Trip;
 import com.rohobie.billing.dto.TripFareResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Assumption: Dead-leg trips receive 0 base fare, but remain billable for any valid extra charges.
  * Design decision: The generated computationNote is stored verbatim on BillLineItem for auditing.
  */
+@Slf4j
 @Service
 public class TripBillingService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TripBillingService.class);
 
     private final ContractLookupService contractLookupService;
     private final SlabComputationService slabComputationService;
@@ -42,7 +40,7 @@ public class TripBillingService {
      */
     @Transactional(readOnly = true)
     public TripFareResult computeTripFare(Trip trip) {
-        logger.debug("Computing fare for trip ID: {} distance: {}km", trip.getId(), trip.getDistanceKm());
+        log.debug("Computing fare for trip ID: {} distance: {}km", trip.getId(), trip.getDistanceKm());
 
         // 1. Resolve active contract for this trip's vehicle as of the trip's start date
         Contract activeContract = contractLookupService.findActiveContract(
@@ -71,7 +69,7 @@ public class TripBillingService {
                 ? baseNote
                 : baseNote + " | " + extrasNote;
 
-        logger.debug("Trip ID: {} completed fare computation -> base: {}p, extras: {}p, note: {}",
+        log.debug("Trip ID: {} completed fare computation -> base: {}p, extras: {}p, note: {}",
                 trip.getId(), basePaisa, extraChargesPaisa, computationNote);
 
         return new TripFareResult(basePaisa, extraChargesPaisa, computationNote);

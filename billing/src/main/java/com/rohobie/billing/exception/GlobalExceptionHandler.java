@@ -1,7 +1,6 @@
 package com.rohobie.billing.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,14 +14,13 @@ import java.util.Map;
  * Centralized exception handling interceptor for REST controllers.
  * Formats errors into standardized JSON envelopes per API specifications.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
-        logger.warn("Resource not found: {}", ex.getMessage());
+        log.warn("Resource not found: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of(
                         "error", "NOT_FOUND",
@@ -32,7 +30,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        logger.warn("Bad request parameter: {}", ex.getMessage());
+        log.warn("Bad request parameter: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
                         "error", "BAD_REQUEST",
@@ -45,7 +43,7 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(java.util.stream.Collectors.joining("; "));
-        logger.warn("Validation error on request body: {}", message);
+        log.warn("Validation error on request body: {}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
                         "error", "BAD_REQUEST",
@@ -64,7 +62,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, String>> handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
-        logger.warn("HTTP method not supported: {}", ex.getMessage());
+        log.warn("HTTP method not supported: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(Map.of(
                         "error", "METHOD_NOT_ALLOWED",
@@ -74,7 +72,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
-        logger.error("Unhandled server exception encountered: ", ex);
+        log.error("Unhandled server exception encountered: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                         "error", "INTERNAL_SERVER_ERROR",

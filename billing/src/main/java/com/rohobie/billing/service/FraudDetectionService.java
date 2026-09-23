@@ -10,8 +10,7 @@ import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.BillLineItemRepository;
 import com.rohobie.billing.repository.BillingRunRepository;
 import com.rohobie.billing.repository.FraudFlagRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +30,10 @@ import java.util.stream.Collectors;
  * Assumption: Impossible distance threshold is fixed at 500 km per spec.
  * Design decision: Fraud flags are purely advisory and do not abort billing run completion.
  */
+@Slf4j
 @Service
 public class FraudDetectionService {
 
-    private static final Logger logger = LoggerFactory.getLogger(FraudDetectionService.class);
     public static final int IMPOSSIBLE_DISTANCE_THRESHOLD_KM = 500;
 
     private final BillingRunRepository billingRunRepository;
@@ -80,7 +79,7 @@ public class FraudDetectionService {
             if (tripId != null && !seenTripIds.add(tripId)) {
                 if (duplicateTripIds.add(tripId)) {
                     String desc = String.format("Trip %d appears more than once in billing run %d.", tripId, billingRunId);
-                    logger.warn("Fraud alert - Duplicate trip detected: {}", desc);
+                    log.warn("Fraud alert - Duplicate trip detected: {}", desc);
                     flagsToSave.add(new FraudFlag(null, billingRun, trip, FraudFlagType.DUPLICATE_TRIP, desc));
                 }
             }
@@ -89,7 +88,7 @@ public class FraudDetectionService {
             if (trip.getDistanceKm() > IMPOSSIBLE_DISTANCE_THRESHOLD_KM) {
                 String desc = String.format("Trip %d: %d km in a single trip exceeds threshold of %d km.",
                         tripId, trip.getDistanceKm(), IMPOSSIBLE_DISTANCE_THRESHOLD_KM);
-                logger.warn("Fraud alert - Impossible distance detected: {}", desc);
+                log.warn("Fraud alert - Impossible distance detected: {}", desc);
                 flagsToSave.add(new FraudFlag(null, billingRun, trip, FraudFlagType.IMPOSSIBLE_DISTANCE, desc));
             }
 
@@ -99,16 +98,16 @@ public class FraudDetectionService {
             } catch (ResourceNotFoundException ex) {
                 String desc = String.format("Trip %d: Vehicle %d has no active contract for date %s.",
                         tripId, trip.getVehicle().getId(), trip.getStartTime().toLocalDate());
-                logger.warn("Fraud alert - Orphan trip detected: {}", desc);
+                log.warn("Fraud alert - Orphan trip detected: {}", desc);
                 flagsToSave.add(new FraudFlag(null, billingRun, trip, FraudFlagType.ORPHAN_TRIP, desc));
             }
         }
 
         if (!flagsToSave.isEmpty()) {
             fraudFlagRepository.saveAll(flagsToSave);
-            logger.warn("Persisted {} advisory fraud flag(s) for billing run ID: {}", flagsToSave.size(), billingRunId);
+            log.warn("Persisted {} advisory fraud flag(s) for billing run ID: {}", flagsToSave.size(), billingRunId);
         } else {
-            logger.debug("Fraud scan completed cleanly with 0 flags for billing run ID: {}", billingRunId);
+            log.debug("Fraud scan completed cleanly with 0 flags for billing run ID: {}", billingRunId);
         }
     }
 

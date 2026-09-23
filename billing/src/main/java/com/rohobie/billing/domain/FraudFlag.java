@@ -12,6 +12,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "fraud_flag")
 public class FraudFlag {
@@ -34,55 +45,4 @@ public class FraudFlag {
 
     @Column(name = "description", nullable = false, length = 300)
     private String description;
-
-    public FraudFlag() {
-    }
-
-    public FraudFlag(Long id, BillingRun billingRun, Trip trip, FraudFlagType flagType, String description) {
-        this.id = id;
-        this.billingRun = billingRun;
-        this.trip = trip;
-        this.flagType = flagType;
-        this.description = description;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public BillingRun getBillingRun() {
-        return billingRun;
-    }
-
-    public void setBillingRun(BillingRun billingRun) {
-        this.billingRun = billingRun;
-    }
-
-    public Trip getTrip() {
-        return trip;
-    }
-
-    public void setTrip(Trip trip) {
-        this.trip = trip;
-    }
-
-    public FraudFlagType getFlagType() {
-        return flagType;
-    }
-
-    public void setFlagType(FraudFlagType flagType) {
-        this.flagType = flagType;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
 }

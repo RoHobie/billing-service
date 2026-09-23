@@ -3,8 +3,8 @@ package com.rohobie.billing.service;
 import com.rohobie.billing.domain.Contract;
 import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.ContractRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +18,9 @@ import java.util.List;
  * Design decision: Uses contract.effectiveFrom with descending order to resolve
  * mid-month rate changes deterministically without requiring a separate versioning join table.
  */
+@Slf4j
 @Service
 public class ContractLookupService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContractLookupService.class);
 
     private final ContractRepository contractRepository;
 
@@ -38,10 +37,10 @@ public class ContractLookupService {
      * @return the active Contract
      * @throws ResourceNotFoundException if no contract is active for the vehicle on that date
      */
-    @org.springframework.cache.annotation.Cacheable(value = "contracts", key = "#vehicleId + ':' + #tripDate")
+    @Cacheable(value = "contracts", key = "#vehicleId + ':' + #tripDate")
     @Transactional(readOnly = true)
     public Contract findActiveContract(Long vehicleId, LocalDate tripDate) {
-        logger.debug("Looking up active contract for vehicle ID: {} on date: {}", vehicleId, tripDate);
+        log.debug("Looking up active contract for vehicle ID: {} on date: {}", vehicleId, tripDate);
         List<Contract> contracts = contractRepository.findActiveContractsOnDate(vehicleId, tripDate);
         if (contracts.isEmpty()) {
             throw new ResourceNotFoundException(

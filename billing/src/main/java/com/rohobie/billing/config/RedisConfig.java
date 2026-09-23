@@ -1,7 +1,6 @@
 package com.rohobie.billing.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.CachingConfigurer;
@@ -28,11 +27,10 @@ import java.time.Duration;
  * Assumption: 15-minute default TTL provides a balance between data freshness and low database load.
  * Design decision: Resilient error handling chosen over hard failure to maintain high availability.
  */
+@Slf4j
 @Configuration
 @EnableCaching
 public class RedisConfig implements CachingConfigurer {
-
-    private static final Logger logger = LoggerFactory.getLogger(RedisConfig.class);
 
     @Bean
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis", matchIfMissing = true)
@@ -53,25 +51,25 @@ public class RedisConfig implements CachingConfigurer {
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-                logger.warn("Redis GET failed for cache [{}] with key [{}]; falling back to database: {}",
+                log.warn("Redis GET failed for cache [{}] with key [{}]; falling back to database: {}",
                         cache != null ? cache.getName() : "unknown", key, exception.getMessage());
             }
 
             @Override
             public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
-                logger.warn("Redis PUT failed for cache [{}] with key [{}]; continuing without caching: {}",
+                log.warn("Redis PUT failed for cache [{}] with key [{}]; continuing without caching: {}",
                         cache != null ? cache.getName() : "unknown", key, exception.getMessage());
             }
 
             @Override
             public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-                logger.warn("Redis EVICT failed for cache [{}] with key [{}]: {}",
+                log.warn("Redis EVICT failed for cache [{}] with key [{}]: {}",
                         cache != null ? cache.getName() : "unknown", key, exception.getMessage());
             }
 
             @Override
             public void handleCacheClearError(RuntimeException exception, Cache cache) {
-                logger.warn("Redis CLEAR failed for cache [{}]: {}",
+                log.warn("Redis CLEAR failed for cache [{}]: {}",
                         cache != null ? cache.getName() : "unknown", exception.getMessage());
             }
         };

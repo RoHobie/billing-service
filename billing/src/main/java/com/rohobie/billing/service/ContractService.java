@@ -13,8 +13,8 @@ import com.rohobie.billing.repository.ContractRepository;
 import com.rohobie.billing.repository.ContractSlabRepository;
 import com.rohobie.billing.repository.VehicleRepository;
 import com.rohobie.billing.repository.VendorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,10 +27,9 @@ import java.util.List;
  * Design decision: Links contracts to vehicles and vendors, supporting versioning
  * via effectiveFrom dates and tiered pricing via slabs.
  */
+@Slf4j
 @Service
 public class ContractService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContractService.class);
 
     private final ContractRepository contractRepository;
     private final ContractSlabRepository contractSlabRepository;
@@ -48,10 +47,10 @@ public class ContractService {
     }
 
     /** Creates a new contract for a vehicle and vendor. */
-    @org.springframework.cache.annotation.CacheEvict(value = "contracts", allEntries = true)
+    @CacheEvict(value = "contracts", allEntries = true)
     @Transactional
     public ContractResponse createContract(ContractRequest request) {
-        logger.info("Creating contract for vehicle ID: {} and vendor ID: {}", request.vehicleId(), request.vendorId());
+        log.info("Creating contract for vehicle ID: {} and vendor ID: {}", request.vehicleId(), request.vendorId());
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle with id " + request.vehicleId() + " not found"));
         Vendor vendor = vendorRepository.findById(request.vendorId())
@@ -81,10 +80,10 @@ public class ContractService {
     }
 
     /** Adds a tiered slab to an existing contract. */
-    @org.springframework.cache.annotation.CacheEvict(value = "contracts", allEntries = true)
+    @CacheEvict(value = "contracts", allEntries = true)
     @Transactional
     public ContractSlabResponse addSlab(Long contractId, ContractSlabRequest request) {
-        logger.info("Adding slab fromKm: {}, toKm: {}, rate: {} to contract ID: {}",
+        log.info("Adding slab fromKm: {}, toKm: {}, rate: {} to contract ID: {}",
                 request.fromKm(), request.toKm(), request.ratePerKmPaisa(), contractId);
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract with id " + contractId + " not found"));

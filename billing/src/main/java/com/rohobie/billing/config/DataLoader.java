@@ -11,8 +11,8 @@ import com.rohobie.billing.repository.ContractSlabRepository;
 import com.rohobie.billing.repository.TripRepository;
 import com.rohobie.billing.repository.VehicleRepository;
 import com.rohobie.billing.repository.VendorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +28,10 @@ import java.time.LocalDateTime;
  *
  * Note: Dev-only scaffolding; replaced by Flyway/Liquibase migrations in production.
  */
+@Slf4j
+@RequiredArgsConstructor
 @Component
 public class DataLoader implements CommandLineRunner {
-
-    private static final Logger logger = LoggerFactory.getLogger(DataLoader.class);
 
     private final VendorRepository vendorRepository;
     private final VehicleRepository vehicleRepository;
@@ -39,27 +39,15 @@ public class DataLoader implements CommandLineRunner {
     private final ContractSlabRepository contractSlabRepository;
     private final TripRepository tripRepository;
 
-    public DataLoader(VendorRepository vendorRepository,
-                      VehicleRepository vehicleRepository,
-                      ContractRepository contractRepository,
-                      ContractSlabRepository contractSlabRepository,
-                      TripRepository tripRepository) {
-        this.vendorRepository = vendorRepository;
-        this.vehicleRepository = vehicleRepository;
-        this.contractRepository = contractRepository;
-        this.contractSlabRepository = contractSlabRepository;
-        this.tripRepository = tripRepository;
-    }
-
     @Override
     @Transactional
     public void run(String... args) {
         if (vendorRepository.count() > 0) {
-            logger.info("Database already seeded; skipping DataLoader initialization");
+            log.info("Database already seeded; skipping DataLoader initialization");
             return;
         }
 
-        logger.info("Seeding demonstration fleet billing dataset...");
+        log.info("Seeding demonstration fleet billing dataset...");
 
         // 1. Vendor
         Vendor vendor = vendorRepository.save(new Vendor(null, "FastFleet Rentals", "info@fastfleet.com"));
@@ -80,7 +68,7 @@ public class DataLoader implements CommandLineRunner {
         contractSlabRepository.save(new ContractSlab(null, v1ContractJan1, 301, null, 800L));
 
         // 4. Contract 2: FIXED_MONTHLY for Vehicle 2 (Effective Jan 1, 2026) - ₹30,000 = 3,000,000 paisa
-        Contract v2Contract = contractRepository.save(new Contract(
+        contractRepository.save(new Contract(
                 null, vehicle2, vendor, ContractType.FIXED_MONTHLY, 3000000L, 0,
                 LocalDate.of(2026, 1, 1), 0L, 0L
         ));
@@ -124,6 +112,6 @@ public class DataLoader implements CommandLineRunner {
         tripRepository.save(new Trip(null, vehicle2, LocalDateTime.of(2026, 1, 27, 10, 0), LocalDateTime.of(2026, 1, 27, 12, 0), 80, false, false, 0, 0L));
         tripRepository.save(new Trip(null, vehicle2, LocalDateTime.of(2026, 1, 30, 15, 0), LocalDateTime.of(2026, 1, 30, 18, 0), 140, false, false, 0, 0L));
 
-        logger.info("Demonstration dataset seeded successfully: 1 vendor, 2 vehicles, 3 contracts, 20 trips");
+        log.info("Demonstration dataset seeded successfully: 1 vendor, 2 vehicles, 3 contracts, 20 trips");
     }
 }

@@ -12,8 +12,19 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "billing_run")
 public class BillingRun {
@@ -35,55 +46,4 @@ public class BillingRun {
 
     @Column(name = "run_at", nullable = false)
     private LocalDateTime runAt;
-
-    public BillingRun() {
-    }
-
-    public BillingRun(Long id, Vehicle vehicle, String billingMonth, BillingRunStatus status, LocalDateTime runAt) {
-        this.id = id;
-        this.vehicle = vehicle;
-        this.billingMonth = billingMonth;
-        this.status = status;
-        this.runAt = runAt;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Vehicle getVehicle() {
-        return vehicle;
-    }
-
-    public void setVehicle(Vehicle vehicle) {
-        this.vehicle = vehicle;
-    }
-
-    public String getBillingMonth() {
-        return billingMonth;
-    }
-
-    public void setBillingMonth(String billingMonth) {
-        this.billingMonth = billingMonth;
-    }
-
-    public BillingRunStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BillingRunStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getRunAt() {
-        return runAt;
-    }
-
-    public void setRunAt(LocalDateTime runAt) {
-        this.runAt = runAt;
-    }
 }

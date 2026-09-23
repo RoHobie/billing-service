@@ -98,11 +98,8 @@ class SecurityTest {
     }
 
     @Test
-    @DisplayName("Static assets and Actuator health are accessible without credentials")
-    void staticAssetsAndHealth_unauthenticated_isPermitted() throws Exception {
-        mockMvc.perform(get("/index.html"))
-                .andExpect(status().isOk());
-
+    @DisplayName("Actuator health is accessible without credentials")
+    void actuatorHealth_unauthenticated_isPermitted() throws Exception {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk());
     }

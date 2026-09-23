@@ -1,6 +1,6 @@
-# Rental Fleet Billing Service & Operations Portal
+# Rental Fleet Billing Service
 
-A comprehensive commercial fleet billing microservice and operations portal built with Spring Boot 3, Redis caching, and Actuator telemetry. It computes deterministic, paisa-accurate month-end invoices for rental fleet vehicles across tiered-slab, flat-rate, and fixed-monthly contracts. Features include exact fee distribution via the Largest Remainder Method, application-level idempotency, mid-month contract versioning, advisory fraud detection, downloadable corporate PDF invoices, resilient Redis caching, and a responsive operations dashboard.
+A comprehensive commercial fleet billing microservice built with Spring Boot 3, Redis caching, and Actuator telemetry. It computes deterministic, paisa-accurate month-end invoices for rental fleet vehicles across tiered-slab, flat-rate, and fixed-monthly contracts. Features include exact fee distribution via the Largest Remainder Method, application-level idempotency, mid-month contract versioning, advisory fraud detection, downloadable corporate PDF invoices, and resilient Redis caching.
 
 ---
 
@@ -14,7 +14,6 @@ Run the entire stack (Billing microservice + Redis) with a single command:
 docker compose up --build
 ```
 
-- **Operations Dashboard**: `http://localhost:8080/`
 - **Actuator Health**: `http://localhost:8080/actuator/health`
 - **H2 Audit Console**: `http://localhost:8080/h2-console`
 - **Redis Cache**: `localhost:6379`
@@ -25,7 +24,7 @@ docker compose up --build
 # 1. Navigate to billing module
 cd billing
 
-# 2. Run unit and integration tests (44 passing tests)
+# 2. Run unit and integration tests (45 passing tests)
 ./mvnw test
 
 # 3. Start the application
@@ -35,21 +34,6 @@ cd billing
 *Note: If Redis is not running locally, the application automatically logs a warning and falls back gracefully to direct database queries without failing HTTP requests.*
 
 The application automatically seeds demonstration fleet data on startup via `DataLoader`, including vendors, vehicles, tiered-slab contracts, mid-month revisions, and January 2026 duty trips.
-
----
-
-## Operations Dashboard
-
-Served directly from the backend on port 8080:
-
-- **URL**: `http://localhost:8080/`
-- **UI Architecture**: Vanilla HTML, minimal CSS, responsive layout, and vanilla JavaScript (zero external CDN or node dependencies).
-- **Business Persona**: Framed as an enterprise **Fleet Management & Billing Portal** without internal technical exposure:
-  1. **Operational Overview**: Real-time KPI cards for active fleet size, registered vendors, total billed revenue (₹), completed runs, and audit discrepancies.
-  2. **Run Settlement**: Interactive form to execute vehicle billing cycles with live results.
-  3. **Invoices & Statements**: Search historical runs, inspect full itemised line items, and download official PDF invoices.
-  4. **Fleet Registry**: Roster of vehicles, classes, and fleet vendor partners.
-  5. **Discrepancy Audit**: Dedicated inspection tool for telematics anomaly flags.
 
 ---
 

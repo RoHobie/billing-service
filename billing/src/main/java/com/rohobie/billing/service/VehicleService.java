@@ -7,8 +7,9 @@ import com.rohobie.billing.dto.response.VehicleResponse;
 import com.rohobie.billing.exception.ResourceNotFoundException;
 import com.rohobie.billing.repository.VehicleRepository;
 import com.rohobie.billing.repository.VendorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +21,9 @@ import java.util.List;
  * Handles vehicle registration and retrieval associated with a fleet vendor.
  * Design decision: Validates vendor existence before associating with a vehicle.
  */
+@Slf4j
 @Service
 public class VehicleService {
-
-    private static final Logger logger = LoggerFactory.getLogger(VehicleService.class);
 
     private final VehicleRepository vehicleRepository;
     private final VendorRepository vendorRepository;
@@ -34,10 +34,10 @@ public class VehicleService {
     }
 
     /** Registers a new vehicle under an existing vendor. */
-    @org.springframework.cache.annotation.CacheEvict(value = "vehicles", allEntries = true)
+    @CacheEvict(value = "vehicles", allEntries = true)
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request) {
-        logger.info("Registering vehicle: {}", request.registrationNumber());
+        log.info("Registering vehicle: {}", request.registrationNumber());
         Vendor vendor = vendorRepository.findById(request.vendorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vendor with id " + request.vendorId() + " not found"));
 
@@ -47,7 +47,7 @@ public class VehicleService {
     }
 
     /** Retrieves vehicle details by ID. */
-    @org.springframework.cache.annotation.Cacheable(value = "vehicles", key = "#id")
+    @Cacheable(value = "vehicles", key = "#id")
     @Transactional(readOnly = true)
     public VehicleResponse getVehicleById(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)

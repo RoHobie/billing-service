@@ -7,6 +7,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "vendor")
 public class Vendor {
@@ -21,41 +32,8 @@ public class Vendor {
     @Column(name = "contact_email", length = 100)
     private String contactEmail;
 
-    public Vendor() {
-    }
-
-    public Vendor(Long id, String name, String contactEmail) {
-        this.id = id;
-        this.name = name;
-        this.contactEmail = contactEmail;
-    }
-
     public Vendor(String name, String contactEmail) {
         this.name = name;
-        this.contactEmail = contactEmail;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
         this.contactEmail = contactEmail;
     }
 }

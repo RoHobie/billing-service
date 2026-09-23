@@ -7,7 +7,11 @@ import com.rohobie.billing.dto.response.BillingRunSummary;
 import com.rohobie.billing.dto.response.FraudFlagResponse;
 import com.rohobie.billing.service.BillingRunService;
 import com.rohobie.billing.service.FraudDetectionService;
+import com.rohobie.billing.service.InvoicePdfService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,21 +28,14 @@ import java.util.List;
  * REST Controller exposing billing run initiation and inspection endpoints.
  * Enforces separation of concerns by delegating all logic to the service layer.
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/billing")
 public class BillingRunController {
 
     private final BillingRunService billingRunService;
     private final FraudDetectionService fraudDetectionService;
-    private final com.rohobie.billing.service.InvoicePdfService invoicePdfService;
-
-    public BillingRunController(BillingRunService billingRunService,
-                                FraudDetectionService fraudDetectionService,
-                                com.rohobie.billing.service.InvoicePdfService invoicePdfService) {
-        this.billingRunService = billingRunService;
-        this.fraudDetectionService = fraudDetectionService;
-        this.invoicePdfService = invoicePdfService;
-    }
+    private final InvoicePdfService invoicePdfService;
 
     @PostMapping("/run")
     public ResponseEntity<ApiResponse<BillingRunSummary>> runBilling(@Valid @RequestBody BillingRunRequest request) {
@@ -59,8 +56,8 @@ public class BillingRunController {
     }
 
     @GetMapping("/run/{runId}/flags")
-    public ResponseEntity<ApiResponse<java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse>>> getBillingRunFlags(@PathVariable Long runId) {
-        java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse> flags = fraudDetectionService.getFlagsForRun(runId);
+    public ResponseEntity<ApiResponse<List<FraudFlagResponse>>> getBillingRunFlags(@PathVariable Long runId) {
+        List<FraudFlagResponse> flags = fraudDetectionService.getFlagsForRun(runId);
         return ResponseEntity.ok(ApiResponse.of(flags));
     }
 
@@ -68,8 +65,8 @@ public class BillingRunController {
     public ResponseEntity<byte[]> downloadInvoicePdf(@PathVariable Long runId) {
         byte[] pdfBytes = invoicePdfService.generateInvoicePdf(runId);
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"invoice-" + runId + ".pdf\"")
-                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"invoice-" + runId + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }
 }
