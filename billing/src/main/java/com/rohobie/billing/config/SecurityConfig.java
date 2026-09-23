@@ -58,6 +58,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console()).permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/styles.css", "/app.js", "/favicon.ico").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/billing/run").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/billing/**").hasAnyRole("ADMIN", "FINANCE")
                         .requestMatchers(HttpMethod.POST, "/api/vendors/**").hasRole("ADMIN")

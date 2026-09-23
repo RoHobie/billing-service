@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastFleet Operations — Commercial Fleet Billing Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-mark">FF</div>
+      <div>
+        <div class="brand-title">FastFleet Operations</div>
+        <div class="brand-subtitle">Commercial Fleet Settlement & Billing Portal</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="status-badge" id="system-status-badge">
+        <span class="status-dot"></span>
+        <span id="system-status-text">Operational</span>
+      </div>
+      <div class="auth-box">
+        <span class="user-role-label">Role:</span>
+        <select id="auth-role-select" class="role-select">
+          <option value="admin:admin123" selected>Administrator (admin)</option>
+          <option value="finance:finance123">Finance Auditor (finance)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Tab Navigation -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-overview">Overview</button>
+      <button class="tab-btn" data-tab="tab-billing">Run Settlement</button>
+      <button class="tab-btn" data-tab="tab-invoices">Invoices & Statements</button>
+      <button class="tab-btn" data-tab="tab-fleet">Fleet Registry</button>
+      <button class="tab-btn" data-tab="tab-audit">Discrepancy Audit</button>
+    </nav>
+
+    <!-- Global Alert Banner -->
+    <div id="alert-banner" class="alert-banner hidden"></div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="tab-pane active">
+      <div class="section-header">
+        <div>
+          <h2>Operational Overview</h2>
+          <p class="section-desc">Key performance indicators and current billing operations telemetry.</p>
+        </div>
+        <button id="btn-refresh-overview" class="btn btn-secondary">Refresh Telemetry</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Active Fleet Vehicles</div>
+          <div class="kpi-value" id="kpi-vehicles">-</div>
+          <div class="kpi-meta">Commercial vehicles in registry</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Registered Vendors</div>
+          <div class="kpi-value" id="kpi-vendors">-</div>
+          <div class="kpi-meta">Fleet partner organizations</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Billed Revenue</div>
+          <div class="kpi-value text-primary" id="kpi-revenue">-</div>
+          <div class="kpi-meta">Cumulative settled amount</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Completed Cycles</div>
+          <div class="kpi-value" id="kpi-runs">-</div>
+          <div class="kpi-meta">Month-end billing runs executed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Flagged Discrepancies</div>
+          <div class="kpi-value text-warning" id="kpi-flags">-</div>
+          <div class="kpi-meta">Audit anomalies awaiting review</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">System Availability</div>
+          <div class="kpi-value text-success" id="kpi-uptime">-</div>
+          <div class="kpi-meta">Continuous service uptime</div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <h3>Quick Settlement Initiation</h3>
+        <p class="text-muted">Initiate month-end fare computation, contract fee distribution, and invoice generation for any registered vehicle.</p>
+        <div class="inline-actions mt-3">
+          <button class="btn btn-primary" onclick="switchToTab('tab-billing')">Execute Vehicle Billing Run &rarr;</button>
+          <button class="btn btn-secondary" onclick="switchToTab('tab-invoices')">Search Historical Invoices &rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: RUN SETTLEMENT -->
+    <section id="tab-billing" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2>Execute Month-End Settlement</h2>
+          <p class="section-desc">Run fare computation with tiered slab rates, extra charge rules, and proportional fixed-fee allocation.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <form id="billing-run-form" class="form-grid">
+          <div class="form-group">
+            <label for="select-vehicle">Select Vehicle Asset</label>
+            <select id="select-vehicle" required class="form-control">
+              <option value="">Loading vehicle roster...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="input-billing-month">Billing Month (YYYY-MM)</label>
+            <input type="text" id="input-billing-month" class="form-control" placeholder="2026-01" value="2026-01" required pattern="\d{4}-\d{2}">
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="btn-submit-billing" class="btn btn-primary">Process Settlement Run</button>
+          </div>
+        </form>
+
+        <div id="billing-run-result" class="result-box hidden mt-4">
+          <div class="result-header">
+            <span class="badge badge-success" id="res-status">COMPLETED</span>
+            <span class="text-muted" id="res-run-id">Run ID: -</span>
+          </div>
+          <div class="result-metrics">
+            <div>
+              <div class="result-metric-label">Vehicle ID</div>
+              <div class="result-metric-val" id="res-vehicle-id">-</div>
+            </div>
+            <div>
+              <div class="result-metric-label">Billing Period</div>
+              <div class="result-metric-val" id="res-month">-</div>
+            </div>
+            <div>
+              <div class="result-metric-label">Itemised Trips</div>
+              <div class="result-metric-val" id="res-item-count">-</div>
+            </div>
+            <div>
+              <div class="result-metric-label">Total Amount</div>
+              <div class="result-metric-val text-primary" id="res-total-rupees">-</div>
+            </div>
+          </div>
+          <div class="inline-actions mt-3">
+            <button id="res-btn-view-items" class="btn btn-secondary">Inspect Trip Line Items</button>
+            <button id="res-btn-download-pdf" class="btn btn-primary">Download PDF Invoice</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: INVOICES & STATEMENTS -->
+    <section id="tab-invoices" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2>Billing Invoices & Audit Statements</h2>
+          <p class="section-desc">Search, inspect itemised statements, and download certified PDF invoices.</p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="search-bar">
+          <input type="number" id="input-search-run-id" class="form-control" placeholder="Enter Settlement Run ID (e.g. 1)" min="1">
+          <button id="btn-search-run" class="btn btn-primary">Retrieve Statement</button>
+        </div>
+      </div>
+
+      <div id="invoice-detail-card" class="card hidden">
+        <div class="invoice-header-row">
+          <div>
+            <h3 id="inv-header-title">Settlement Statement #1</h3>
+            <div class="text-muted" id="inv-header-meta">Vehicle: KA-01-HH-1234 | Period: 2026-01</div>
+          </div>
+          <div class="inline-actions">
+            <button id="inv-btn-download-pdf" class="btn btn-primary">Download Official PDF</button>
+          </div>
+        </div>
+
+        <div class="invoice-summary-grid mt-3">
+          <div class="summary-cell">
+            <span class="summary-title">Status</span>
+            <span class="summary-val" id="inv-status">COMPLETED</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-title">Run Timestamp</span>
+            <span class="summary-val" id="inv-timestamp">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-title">Total Trips</span>
+            <span class="summary-val" id="inv-trips-count">-</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-title">Statement Grand Total</span>
+            <span class="summary-val text-primary" id="inv-grand-total">-</span>
+          </div>
+        </div>
+
+        <h4 class="mt-4 mb-2">Itemised Trip Computations</h4>
+        <div class="table-responsive">
+          <table class="data-table" id="table-invoice-items">
+            <thead>
+              <tr>
+                <th>Item ID</th>
+                <th>Trip ID</th>
+                <th>Base Fare (₹)</th>
+                <th>Surcharges (₹)</th>
+                <th>Fixed Share (₹)</th>
+                <th>Total (₹)</th>
+                <th>Computation Trace</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="7" class="text-center text-muted">No items to display</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: FLEET REGISTRY -->
+    <section id="tab-fleet" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2>Fleet Vehicle Roster</h2>
+          <p class="section-desc">Active commercial vehicle assets registered across operational fleet partners.</p>
+        </div>
+        <button id="btn-refresh-fleet" class="btn btn-secondary">Refresh Roster</button>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table" id="table-vehicles">
+            <thead>
+              <tr>
+                <th>Asset ID</th>
+                <th>Registration Plate</th>
+                <th>Vehicle Class</th>
+                <th>Fleet Partner / Vendor</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" class="text-center text-muted">Loading fleet roster...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: DISCREPANCY AUDIT -->
+    <section id="tab-audit" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2>Operational Discrepancy & Fraud Audit</h2>
+          <p class="section-desc">Automated detection of anomalous trip distances and duplicate telematics logs.</p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="search-bar">
+          <input type="number" id="input-audit-run-id" class="form-control" placeholder="Enter Settlement Run ID to inspect flags (e.g. 1)" min="1">
+          <button id="btn-search-audit" class="btn btn-primary">Audit Run</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table" id="table-audit-flags">
+            <thead>
+              <tr>
+                <th>Flag ID</th>
+                <th>Run ID</th>
+                <th>Trip ID</th>
+                <th>Category</th>
+                <th>Severity</th>
+                <th>Details & Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6" class="text-center text-muted">Enter a Run ID to view audit flags.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Itemised Line Items Modal -->
+  <div id="items-modal" class="modal-backdrop hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-title">Trip Breakdown Audit</h3>
+        <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-summary" class="mb-3 text-muted"></div>
+        <div class="table-responsive">
+          <table class="data-table" id="table-modal-items">
+            <thead>
+              <tr>
+                <th>Trip ID</th>
+                <th>Base Fare</th>
+                <th>Extras</th>
+                <th>Fixed Share</th>
+                <th>Total Fare</th>
+                <th>Audit Trace</th>
+              </tr>
+            </thead>
+            <tbody id="modal-items-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-btn-download-pdf" class="btn btn-primary">Download PDF Invoice</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="footer-content">
+      <span>FastFleet Operations &copy; 2026. Enterprise Commercial Billing System.</span>
+      <span class="footer-links">
+        <a href="/actuator/health" target="_blank" class="footer-link">System Health Check</a>
+      </span>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

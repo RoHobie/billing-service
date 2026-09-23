@@ -94,4 +94,14 @@ class SecurityTest {
                             .isNotIn(401, 403);
                 });
     }
+
+    @Test
+    @DisplayName("Static assets and Actuator health are accessible without credentials")
+    void staticAssetsAndHealth_unauthenticated_isPermitted() throws Exception {
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk());
+    }
 }
