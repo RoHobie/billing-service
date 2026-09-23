@@ -306,4 +306,17 @@ public class BillingRunService {
                         "Billing run for vehicle " + vehicleId + " and month " + billingMonth + " not found"));
         return getBillingRunSummary(billingRun.getId());
     }
+
+    /**
+     * Retrieves all recorded billing run summaries sorted by runId descending.
+     *
+     * @return List of BillingRunSummary DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<BillingRunSummary> getAllBillingRuns() {
+        return billingRunRepository.findAll().stream()
+                .map(run -> getBillingRunSummary(run.getId()))
+                .sorted((a, b) -> b.runId().compareTo(a.runId()))
+                .collect(Collectors.toList());
+    }
 }

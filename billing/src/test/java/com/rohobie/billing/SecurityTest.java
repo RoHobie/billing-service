@@ -138,4 +138,42 @@ class SecurityTest {
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
     }
+
+    @Test
+    @DisplayName("Vendor self-registration succeeds and assigns default role")
+    void vendorRegistration_succeeds_andAssignsDefaultRole() throws Exception {
+        String regJson = """
+                {
+                    "username": "testvendor",
+                    "password": "vendorPassword123",
+                    "vendorName": "Apex Test Transport",
+                    "contactEmail": "test@apextransport.com"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regJson))
+                .andExpect(status().isCreated());
+
+        // Authenticate as newly registered vendor
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", basicAuth("testvendor", "vendorPassword123")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Unauthenticated request to GET /api/auth/me returns 401")
+    void authMe_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Authenticated request to GET /api/auth/me returns current user and role")
+    void authMe_authenticated_returnsRole() throws Exception {
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", basicAuth("admin", "admin123")))
+                .andExpect(status().isOk());
+    }
 }

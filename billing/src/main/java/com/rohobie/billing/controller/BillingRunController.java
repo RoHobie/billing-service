@@ -58,6 +58,12 @@ public class BillingRunController {
         }
     }
 
+    @GetMapping("/runs")
+    public ResponseEntity<ApiResponse<List<BillingRunSummary>>> getAllBillingRuns() {
+        List<BillingRunSummary> runs = billingRunService.getAllBillingRuns();
+        return ResponseEntity.ok(ApiResponse.of(runs));
+    }
+
     @GetMapping("/run/{runId}")
     public ResponseEntity<ApiResponse<BillingRunResponse>> getBillingRun(@PathVariable Long runId) {
         BillingRunResponse response = billingRunService.getBillingRun(runId);

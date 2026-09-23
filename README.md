@@ -253,6 +253,24 @@ Full non-paginated bill data remains available at `GET /api/billing/run/{runId}`
 
 ---
 
+## Operations Dashboard & Business Landing Page
+
+The microservice includes a minimal React and TypeScript frontend served on the same port at `http://localhost:8080/`.
+
+- **Access**: Open `http://localhost:8080/` in any modern web browser.
+- **Role Switching**: Role changes are executed via logging out and logging in:
+  - **Administrator Quick-Fill**: Access with full settlement execution and master data privileges.
+  - **Finance Quick-Fill**: Access with statement inspection, audit verification, and PDF invoice generation privileges.
+  - **Partner Self-Registration**: Commercial vendors can register an account directly on the landing page, automatically receiving default review privileges.
+- **Operational Interface**:
+  - **KPI Telemetry Bar**: Auto-refreshing business figures covering active vehicles, commercial partners, generated settlement runs, total invoiced revenue, and operational status.
+  - **Panel A (Settlement Selection)**: Vehicle selector, billing month input, settlement statement generation.
+  - **Panel B (Statement Summary)**: Verified line items, grand total in Indian Rupees (`₹`), and one-click PDF tax invoice download.
+  - **Panel C (Compliance & Audit Verification)**: Real-time display of advisory audit flags (duplicate trips, distance threshold exceedances).
+  - **Panel D (Itemised Trip Ledger)**: Paginated trip line items with base fares, dynamic surcharges, fixed fee allocations, and mathematical calculation notes.
+
+---
+
 ## Algorithmic Complexity & Cost Estimation
 
 A formal time and space complexity evaluation for every computation point utilizing auxiliary memory is documented in [COMPLEXITY_ANALYSIS.md](COMPLEXITY_ANALYSIS.md), covering:

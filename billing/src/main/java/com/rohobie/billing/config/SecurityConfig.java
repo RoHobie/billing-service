@@ -1,5 +1,6 @@
 package com.rohobie.billing.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -8,7 +9,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -26,12 +26,24 @@ import java.util.List;
  * Defines in-memory users for admin and finance personnel, disables CSRF for stateless REST,
  * allows unauthenticated access to the H2 console, and enforces least-privilege endpoint security.
  *
- * Assumption: Roles are managed in-memory with static credentials for MVP scope.
+ * Assumption: Roles are managed in-memory with credentials externalized via environment/properties.
  * Design decision: Lambda DSL used exclusively in accordance with Spring Security 6/Spring Boot 3.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${security.admin.username:${ADMIN_USERNAME:admin}}")
+    private String adminUsername;
+
+    @Value("${security.admin.password:${ADMIN_PASSWORD:admin123}}")
+    private String adminPassword;
+
+    @Value("${security.finance.username:${FINANCE_USERNAME:finance}}")
+    private String financeUsername;
+
+    @Value("${security.finance.password:${FINANCE_PASSWORD:finance123}}")
+    private String financePassword;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,16 +51,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+    public InMemoryUserDetailsManager userDetailsService(PasswordEncoder passwordEncoder) {
         UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin123"))
+                .username(adminUsername)
+                .password(passwordEncoder.encode(adminPassword))
                 .roles("ADMIN")
                 .build();
 
         UserDetails finance = User.builder()
-                .username("finance")
-                .password(passwordEncoder.encode("finance123"))
+                .username(financeUsername)
+                .password(passwordEncoder.encode(financePassword))
                 .roles("FINANCE")
                 .build();
 
@@ -67,6 +79,9 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/favicon.ico", "/assets/**", "/*.js", "/*.css", "/*.svg", "/*.png", "/*.ico").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/billing/run").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/billing/**").hasAnyRole("ADMIN", "FINANCE")
                         .requestMatchers(HttpMethod.POST, "/api/vendors/**").hasRole("ADMIN")
