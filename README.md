@@ -4,36 +4,94 @@ A comprehensive commercial fleet billing microservice built with Spring Boot 3, 
 
 ---
 
-## Quickstart
+## Prerequisites & Dependencies
 
-### Option A: Docker Compose (Recommended)
+### When Running With Docker
+- **Docker Engine**: version 24.0+
+- **Docker Compose**: version 2.20+
+- *No local Java, Maven, PostgreSQL, or Redis installations are required on the host system.*
 
-Run the entire stack (Billing microservice + Redis) with a single command:
+### When Running Locally (Without Docker)
+- **Java Development Kit (JDK)**: OpenJDK or Eclipse Temurin **21 (LTS)**
+- **Build Tool**: Maven 3.9+ (optional — the included `./mvnw` wrapper can be used directly)
+- **Storage Engines**:
+  - **H2 (Default)**: Embedded in-memory database managed inside the JVM process. **Zero installation required.**
+  - **PostgreSQL 16+ (Persistent Storage)**:
+    - *Ubuntu / Debian*: `sudo apt update && sudo apt install -y postgresql postgresql-contrib`
+    - *macOS (Homebrew)*: `brew install postgresql@16 && brew services start postgresql@16`
+    - *Or spin up just the containerized DB*: `docker compose up -d postgres`
+    - *Default credentials*: Database `fleetdb`, User `postgres`, Password `postgres`, Port `5432`.
+- **Cache Engine (Optional)**:
+  - Redis 7+ (`sudo apt install redis-server` or `docker compose up -d redis`). If omitted, the service falls back automatically to direct database reads.
 
+---
+
+## Quickstart & Storage Configuration
+
+The system supports **H2 in-memory storage (default)** for zero-setup execution and unit testing, and **PostgreSQL (persistent storage)** backed by Docker volumes for production-like persistent fleet operations.
+
+### 1. Running with Docker Compose
+
+The `docker-compose.yml` orchestrates the Billing microservice, Redis cache, and PostgreSQL with a dedicated persistent named volume (`postgres-data`).
+
+#### Mode A: Default In-Memory Storage (H2)
 ```bash
 docker compose up --build
 ```
-
+- **H2 Console**: `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:fleetdb`, User: `sa`, Password: empty)
 - **Actuator Health**: `http://localhost:8080/actuator/health`
-- **H2 Audit Console**: `http://localhost:8080/h2-console`
 - **Redis Cache**: `localhost:6379`
 
-### Option B: Local Maven Run
+#### Mode B: Persistent Storage (PostgreSQL)
+To run with PostgreSQL and persist all data across container restarts in the `postgres-data` volume:
+```bash
+SPRING_PROFILES_ACTIVE=postgres docker compose up --build
+```
+- **PostgreSQL Port**: `localhost:5432` (`fleetdb` database)
+- **Data Persistence**: Stored in Docker volume `fastfleet_postgres-data`
 
+---
+
+### 2. Running Locally (Without Docker)
+
+#### Mode A: Default In-Memory Storage (H2)
 ```bash
 # 1. Navigate to billing module
 cd billing
 
-# 2. Run unit and integration tests (45 passing tests)
+# 2. Run unit and integration tests (50 passing tests)
 ./mvnw test
 
-# 3. Start the application
+# 3. Start the application with default H2 in-memory database
 ./mvnw spring-boot:run
 ```
 
-*Note: If Redis is not running locally, the application automatically logs a warning and falls back gracefully to direct database queries without failing HTTP requests.*
+#### Mode B: Persistent Storage (PostgreSQL)
+Ensure PostgreSQL is running locally on port 5432 with database `fleetdb` (or run `docker compose up -d postgres redis`), then start the service with the `postgres` profile:
+```bash
+cd billing
 
-The application automatically seeds demonstration fleet data on startup via `DataLoader`, including vendors, vehicles, tiered-slab contracts, mid-month revisions, and January 2026 duty trips.
+# Via Maven profile flag:
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+
+# Or via environment variable:
+SPRING_PROFILES_ACTIVE=postgres ./mvnw spring-boot:run
+```
+
+### Storage Configuration Matrix
+
+| Environment Variable | Default Value | Description |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | `default` | Active Spring profile (`default` for H2 in-memory, `postgres` for PostgreSQL) |
+| `POSTGRES_HOST` | `localhost` (`postgres` in Docker) | PostgreSQL hostname |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | `fleetdb` | Target database name |
+| `POSTGRES_USER` | `postgres` | Database username |
+| `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `REDIS_HOST` | `localhost` (`redis` in Docker) | Redis hostname |
+| `REDIS_PORT` | `6379` | Redis port |
+
+The application automatically seeds demonstration fleet data on startup via `DataLoader` (vendors, vehicles, tiered-slab contracts, mid-month revisions, and January 2026 duty trips). In PostgreSQL mode, existing records are detected on subsequent boots to prevent duplicate seeding.
 
 ---
 
