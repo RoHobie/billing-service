@@ -157,8 +157,52 @@ SELECT c FROM Contract c WHERE c.vehicle.id = :vehicleId AND c.effectiveFrom <= 
 ```
 This cleanly applies rate adjustments mid-month (e.g. trips on Jan 14 apply Jan 1 rates, while trips on Jan 16 apply Jan 15 rates).
 
-### 5. Application-Level Idempotency
-Executing `POST /api/billing/run` for `(vehicleId, billingMonth)` first checks for an existing `COMPLETED` run. If found, it immediately returns the saved result without redundant computation or duplicate database records.
+### 5. Multi-Layered Idempotency & Concurrency Safety
+Executing `POST /api/billing/run` for `(vehicleId, billingMonth)` is protected at both application and database layers:
+1. **Application Query Check**: First checks for an existing `COMPLETED` run. If found, returns the persisted summary immediately with zero duplicate computation.
+2. **Database Unique Constraint**: A database constraint on `(vehicle_id, billing_month)` prevents concurrent execution threads from creating duplicate runs. If a race condition occurs, `DataIntegrityViolationException` is caught, the existing run is re-queried, and its summary is returned with HTTP 200 OK.
+3. **Optimistic Locking**: An `@Version` field on `BillingRun` ensures database-level concurrency protection, eliminating lost updates.
+
+---
+
+## Handling System Failure Cases & Recovery Procedures
+
+Billing is a **pure function** of immutable historical `Trip` records and `Contract` rules. A `FAILED` or interrupted run is safely recoverable simply by re-running; nothing is lost because nothing but derived output was ever mutated. 
+
+When a re-run is requested for an incomplete, stale, or failed run:
+1. The orchestrator resets the run status to `PENDING` within an atomic transaction.
+2. Stale partial line items and fraud flags from the aborted run are deleted.
+3. The calculation re-evaluates all trip fares from the ground truth trip and contract tables.
+4. Line items and advisory fraud flags are re-persisted and the status transitions to `COMPLETED`.
+
+Because inputs are never mutated, disaster recovery requires zero manual database rollback scripts or data restoration procedures.
+
+---
+
+## Paginated Line Items API
+
+For fleets logging thousands of trips per month, line items can be retrieved in paginated slices:
+
+- **Endpoint**: `GET /api/billing/run/{runId}/items?page=0&size=20`
+- **Roles**: `ADMIN`, `FINANCE`
+- **Query Parameters**:
+  - `page`: 0-indexed page number (default `0`).
+  - `size`: number of records per page (default `20`).
+  - `sort`: optional sort property (e.g. `trip.startTime,asc`).
+- **Response**: Standard Spring Data Page structure containing `content` array of `BillLineItemResponse`, `totalPages`, `totalElements`, `size`, and `number`.
+
+Full non-paginated bill data remains available at `GET /api/billing/run/{runId}` for compliance archiving and PDF generation.
+
+---
+
+## Algorithmic Complexity & Cost Estimation
+
+A formal time and space complexity evaluation for every computation point utilizing auxiliary memory is documented in [COMPLEXITY_ANALYSIS.md](COMPLEXITY_ANALYSIS.md), covering:
+- $O(N \log N)$ time and $O(N)$ auxiliary memory for the Largest Remainder Method (`FixedFeeSplitService.split`).
+- $O(N \log N)$ time and $O(N)$ space for Month-End Orchestration (`BillingRunService.runBilling`).
+- $O(N)$ linear-time advisory fraud detection (`FraudDetectionService.scan`).
+- $O(P)$ constant memory footprint for paginated query slices.
+- $O(V \times D)$ bounded in-memory cache footprint in Redis.
 
 ---
 
@@ -172,3 +216,4 @@ Executing `POST /api/billing/run` for `(vehicleId, billingMonth)` first checks f
 6. **Impossible Distance Threshold**: Single trips with distance exceeding 500 km trigger an advisory `IMPOSSIBLE_DISTANCE` fraud flag.
 7. **Billing Month Format**: Month inputs must adhere to `YYYY-MM`.
 8. **Long Paisa vs BigDecimal for Storage**: `long` is faster, memory-efficient, and guarantees integer precision. `BigDecimal` is restricted to division operations.
+9. **Pure Function Billing**: Billing never mutates raw trip or contract data, guaranteeing fault-tolerant recovery.
