@@ -29,9 +29,12 @@ import java.util.List;
 public class BillingRunController {
 
     private final BillingRunService billingRunService;
+    private final FraudDetectionService fraudDetectionService;
 
-    public BillingRunController(BillingRunService billingRunService) {
+    public BillingRunController(BillingRunService billingRunService,
+                                FraudDetectionService fraudDetectionService) {
         this.billingRunService = billingRunService;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     @PostMapping("/run")
@@ -50,5 +53,11 @@ public class BillingRunController {
     public ResponseEntity<ApiResponse<BillingRunSummary>> getBillingRunSummary(@PathVariable Long runId) {
         BillingRunSummary summary = billingRunService.getBillingRunSummary(runId);
         return ResponseEntity.ok(ApiResponse.of(summary));
+    }
+
+    @GetMapping("/run/{runId}/flags")
+    public ResponseEntity<ApiResponse<java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse>>> getBillingRunFlags(@PathVariable Long runId) {
+        java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse> flags = fraudDetectionService.getFlagsForRun(runId);
+        return ResponseEntity.ok(ApiResponse.of(flags));
     }
 }

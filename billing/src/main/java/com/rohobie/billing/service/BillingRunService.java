@@ -56,6 +56,7 @@ public class BillingRunService {
     private final TripBillingService tripBillingService;
     private final ContractLookupService contractLookupService;
     private final FixedFeeSplitService fixedFeeSplitService;
+    private final FraudDetectionService fraudDetectionService;
 
     public BillingRunService(BillingRunRepository billingRunRepository,
                              BillLineItemRepository billLineItemRepository,
@@ -64,7 +65,8 @@ public class BillingRunService {
                              TripRepository tripRepository,
                              TripBillingService tripBillingService,
                              ContractLookupService contractLookupService,
-                             FixedFeeSplitService fixedFeeSplitService) {
+                             FixedFeeSplitService fixedFeeSplitService,
+                             FraudDetectionService fraudDetectionService) {
         this.billingRunRepository = billingRunRepository;
         this.billLineItemRepository = billLineItemRepository;
         this.fraudFlagRepository = fraudFlagRepository;
@@ -73,6 +75,7 @@ public class BillingRunService {
         this.tripBillingService = tripBillingService;
         this.contractLookupService = contractLookupService;
         this.fixedFeeSplitService = fixedFeeSplitService;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     /**
@@ -175,6 +178,9 @@ public class BillingRunService {
 
         // Persist all line items
         billLineItemRepository.saveAll(lineItems);
+
+        // Run advisory fraud scan prior to completion
+        fraudDetectionService.scan(billingRun.getId());
 
         // Finalize billing run status
         billingRun.setStatus(BillingRunStatus.COMPLETED);

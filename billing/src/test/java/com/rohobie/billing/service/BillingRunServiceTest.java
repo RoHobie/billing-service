@@ -66,6 +66,9 @@ class BillingRunServiceTest {
     @Mock
     private FixedFeeSplitService fixedFeeSplitService;
 
+    @Mock
+    private FraudDetectionService fraudDetectionService;
+
     @InjectMocks
     private BillingRunService billingRunService;
 
@@ -113,6 +116,7 @@ class BillingRunServiceTest {
         assertThat(summary.lineItemCount()).isEqualTo(2);
         assertThat(summary.grandTotalPaisa()).isEqualTo(180000L);
 
+        verify(fraudDetectionService).scan(10L);
         verify(billLineItemRepository).saveAll(any());
     }
 
