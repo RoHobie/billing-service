@@ -21,6 +21,8 @@ import com.rohobie.billing.config.MetricsConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -264,5 +266,44 @@ public class BillingRunService {
                 items.size(),
                 grandTotalPaisa
         );
+    }
+
+    /**
+     * Retrieves a paginated slice of line items for a billing run.
+     *
+     * @param runId    the billing run identifier
+     * @param pageable pagination parameters (page, size, sort)
+     * @return a page of BillLineItemResponse DTOs
+     */
+    @Transactional(readOnly = true)
+    public Page<BillLineItemResponse> getBillingRunItems(Long runId, Pageable pageable) {
+        if (!billingRunRepository.existsById(runId)) {
+            throw new ResourceNotFoundException("Billing run with id " + runId + " not found");
+        }
+        return billLineItemRepository.findByBillingRunId(runId, pageable)
+                .map(item -> new BillLineItemResponse(
+                        item.getId(),
+                        item.getTrip().getId(),
+                        item.getBasePaisa(),
+                        item.getExtraChargesPaisa(),
+                        item.getFixedFeeSharePaisa(),
+                        item.getTotalPaisa(),
+                        item.getComputationNote()
+                ));
+    }
+
+    /**
+     * Retrieves the billing run summary for a vehicle and billing month.
+     *
+     * @param vehicleId    the vehicle identifier
+     * @param billingMonth the billing period in YYYY-MM format
+     * @return BillingRunSummary DTO
+     */
+    @Transactional(readOnly = true)
+    public BillingRunSummary getBillingRunSummaryByVehicleAndMonth(Long vehicleId, String billingMonth) {
+        BillingRun billingRun = billingRunRepository.findByVehicleIdAndBillingMonth(vehicleId, billingMonth)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Billing run for vehicle " + vehicleId + " and month " + billingMonth + " not found"));
+        return getBillingRunSummary(billingRun.getId());
     }
 }

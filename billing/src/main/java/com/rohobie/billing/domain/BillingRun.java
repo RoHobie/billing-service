@@ -11,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +28,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "billing_run")
+@Table(name = "billing_run", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_billing_run_vehicle_month", columnNames = {"vehicle_id", "billing_month"})
+})
 public class BillingRun {
 
     @Id
@@ -46,4 +50,15 @@ public class BillingRun {
 
     @Column(name = "run_at", nullable = false)
     private LocalDateTime runAt;
+
+    @Version
+    private Long version;
+
+    public BillingRun(Long id, Vehicle vehicle, String billingMonth, BillingRunStatus status, LocalDateTime runAt) {
+        this.id = id;
+        this.vehicle = vehicle;
+        this.billingMonth = billingMonth;
+        this.status = status;
+        this.runAt = runAt;
+    }
 }

@@ -95,4 +95,37 @@ class BillingIntegrationTest {
             assertThat(item.totalPaisa()).isEqualTo(item.basePaisa() + item.extraChargesPaisa());
         }
     }
+
+    @Autowired
+    private com.rohobie.billing.repository.BillingRunRepository billingRunRepository;
+
+    @Test
+    @DisplayName("Paginated line items endpoint returns correct page slices and metadata")
+    void testPaginatedLineItems() {
+        Vehicle vehicle = vehicleRepository.findAll().get(0);
+        BillingRunSummary summary = billingRunService.runBilling(vehicle.getId(), "2026-01");
+
+        org.springframework.data.domain.Page<BillLineItemResponse> page1 =
+                billingRunService.getBillingRunItems(summary.runId(), org.springframework.data.domain.PageRequest.of(0, 5));
+
+        assertThat(page1.getContent()).hasSize(5);
+        assertThat(page1.getTotalElements()).isEqualTo(10);
+        assertThat(page1.getTotalPages()).isEqualTo(2);
+        assertThat(page1.getNumber()).isEqualTo(0);
+
+        org.springframework.data.domain.Page<BillLineItemResponse> page2 =
+                billingRunService.getBillingRunItems(summary.runId(), org.springframework.data.domain.PageRequest.of(1, 5));
+        assertThat(page2.getContent()).hasSize(5);
+        assertThat(page2.getNumber()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("BillingRun optimistic locking version is initialized upon persistence")
+    void testBillingRunVersionInitialized() {
+        Vehicle vehicle = vehicleRepository.findAll().get(0);
+        BillingRunSummary summary = billingRunService.runBilling(vehicle.getId(), "2026-01");
+
+        com.rohobie.billing.domain.BillingRun run = billingRunRepository.findById(summary.runId()).orElseThrow();
+        assertThat(run.getVersion()).isNotNull();
+    }
 }

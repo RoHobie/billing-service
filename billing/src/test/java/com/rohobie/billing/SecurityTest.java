@@ -105,6 +105,29 @@ class SecurityTest {
     }
 
     @Test
+    @DisplayName("Actuator metrics endpoint without credentials returns 401 Unauthorized")
+    void actuatorMetrics_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Actuator metrics endpoint called by FINANCE user returns 403 Forbidden")
+    void actuatorMetrics_financeRole_returns403() throws Exception {
+        mockMvc.perform(get("/actuator/metrics")
+                        .header("Authorization", basicAuth("finance", "finance123")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Actuator metrics endpoint called by ADMIN user returns 200 OK")
+    void actuatorMetrics_adminRole_returns200() throws Exception {
+        mockMvc.perform(get("/actuator/metrics")
+                        .header("Authorization", basicAuth("admin", "admin123")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("CORS pre-flight OPTIONS request returns 200 with appropriate CORS headers")
     void corsPreflight_returnsOkWithHeaders() throws Exception {
         mockMvc.perform(options("/api/monitoring/stats")

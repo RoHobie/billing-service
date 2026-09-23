@@ -70,6 +70,16 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Database integrity violation: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "error", "CONFLICT",
+                        "message", "Database constraint violation: duplicate record or unique constraint conflict"
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         log.error("Unhandled server exception encountered: ", ex);

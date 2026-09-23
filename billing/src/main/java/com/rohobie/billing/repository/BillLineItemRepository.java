@@ -1,6 +1,8 @@
 package com.rohobie.billing.repository;
 
 import com.rohobie.billing.domain.BillLineItem;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +15,8 @@ import java.util.List;
 public interface BillLineItemRepository extends JpaRepository<BillLineItem, Long> {
 
     List<BillLineItem> findByBillingRunId(Long billingRunId);
+
+    Page<BillLineItem> findByBillingRunId(Long billingRunId, Pageable pageable);
 
     @Modifying
     @Query("DELETE FROM BillLineItem b WHERE b.billingRun.id = :billingRunId")
