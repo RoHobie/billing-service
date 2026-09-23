@@ -12,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -103,5 +105,17 @@ class SecurityTest {
 
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("CORS pre-flight OPTIONS request returns 200 with appropriate CORS headers")
+    void corsPreflight_returnsOkWithHeaders() throws Exception {
+        mockMvc.perform(options("/api/monitoring/stats")
+                        .header("Origin", "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "Authorization"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
     }
 }

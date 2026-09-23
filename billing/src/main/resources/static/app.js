@@ -6,6 +6,11 @@
 // State
 let currentRunDetails = null;
 
+// Dynamic API Base URL: auto-targets http://localhost:8080 when testing from different ports (e.g. Live Server, file://)
+const API_BASE = (window.location.protocol === 'file:' || (window.location.port !== '8080' && window.location.hostname !== '')) 
+  ? 'http://localhost:8080' 
+  : '';
+
 // DOM Elements
 const authSelect = document.getElementById('auth-role-select');
 const alertBanner = document.getElementById('alert-banner');
@@ -19,13 +24,14 @@ function getAuthHeader() {
 }
 
 async function apiFetch(endpoint, options = {}) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
   const headers = {
     'Accept': 'application/json',
     'Authorization': getAuthHeader(),
     ...(options.headers || {})
   };
 
-  const response = await fetch(endpoint, { ...options, headers });
+  const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
     showAlert('Authentication required or invalid credentials.', 'error');
@@ -327,7 +333,8 @@ async function handleSearchAudit() {
 async function downloadInvoicePdf(runId) {
   try {
     showAlert(`Compiling official invoice PDF for Run #${runId}...`, 'success');
-    const response = await fetch(`/api/billing/run/${runId}/invoice/pdf`, {
+    const url = `${API_BASE}/api/billing/run/${runId}/invoice/pdf`;
+    const response = await fetch(url, {
       headers: {
         'Authorization': getAuthHeader()
       }
