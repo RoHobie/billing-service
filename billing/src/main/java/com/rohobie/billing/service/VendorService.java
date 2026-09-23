@@ -45,6 +45,14 @@ public class VendorService {
         return mapToResponse(vendor);
     }
 
+    /** Retrieves all registered vendors. */
+    @Transactional(readOnly = true)
+    public java.util.List<VendorResponse> getAllVendors() {
+        return vendorRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private VendorResponse mapToResponse(Vendor vendor) {
         return new VendorResponse(vendor.getId(), vendor.getName(), vendor.getContactEmail());
     }

@@ -208,5 +208,14 @@ class EntityCrudTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Contract with id 99999 not found"));
+
+        // 7. GET list endpoints return 200 with arrays
+        mockMvc.perform(get("/api/vehicles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+
+        mockMvc.perform(get("/api/vendors"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
     }
 }

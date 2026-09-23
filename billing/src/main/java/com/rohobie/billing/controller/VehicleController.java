@@ -30,6 +30,12 @@ public class VehicleController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<java.util.List<VehicleResponse>>> getAllVehicles() {
+        java.util.List<VehicleResponse> vehicles = vehicleService.getAllVehicles();
+        return ResponseEntity.ok(ApiResponse.of(vehicles));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VehicleResponse>> getVehicleById(@PathVariable Long id) {
         VehicleResponse response = vehicleService.getVehicleById(id);

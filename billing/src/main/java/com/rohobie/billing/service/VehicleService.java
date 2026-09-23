@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * VehicleService
  *
@@ -51,6 +53,14 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle with id " + id + " not found"));
         return mapToResponse(vehicle);
+    }
+
+    /** Retrieves all registered vehicles. */
+    @Transactional(readOnly = true)
+    public List<VehicleResponse> getAllVehicles() {
+        return vehicleRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private VehicleResponse mapToResponse(Vehicle vehicle) {

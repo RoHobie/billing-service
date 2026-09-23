@@ -30,6 +30,12 @@ public class VendorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<java.util.List<VendorResponse>>> getAllVendors() {
+        java.util.List<VendorResponse> vendors = vendorService.getAllVendors();
+        return ResponseEntity.ok(ApiResponse.of(vendors));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VendorResponse>> getVendorById(@PathVariable Long id) {
         VendorResponse response = vendorService.getVendorById(id);
