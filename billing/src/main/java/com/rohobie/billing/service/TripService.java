@@ -1,0 +1,78 @@
+package com.rohobie.billing.service;
+
+import com.rohobie.billing.domain.Trip;
+import com.rohobie.billing.domain.Vehicle;
+import com.rohobie.billing.dto.request.TripRequest;
+import com.rohobie.billing.dto.response.TripResponse;
+import com.rohobie.billing.exception.ResourceNotFoundException;
+import com.rohobie.billing.repository.TripRepository;
+import com.rohobie.billing.repository.VehicleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * TripService
+ *
+ * Records and retrieves trip duty records for vehicles.
+ * Design decision: Links each trip to a registered vehicle and preserves
+ * dead-leg, waiting time, and night flags for downstream billing.
+ */
+@Service
+public class TripService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TripService.class);
+
+    private final TripRepository tripRepository;
+    private final VehicleRepository vehicleRepository;
+
+    public TripService(TripRepository tripRepository, VehicleRepository vehicleRepository) {
+        this.tripRepository = tripRepository;
+        this.vehicleRepository = vehicleRepository;
+    }
+
+    /** Records a new trip for a vehicle. */
+    @Transactional
+    public TripResponse createTrip(TripRequest request) {
+        logger.info("Recording trip for vehicle ID: {} distance: {}km", request.vehicleId(), request.distanceKm());
+        Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle with id " + request.vehicleId() + " not found"));
+
+        Trip trip = new Trip(
+                vehicle,
+                request.startTime(),
+                request.endTime(),
+                request.distanceKm(),
+                request.isDeadLeg(),
+                request.hasNightCharge(),
+                request.waitingMinutes(),
+                request.tollAmountPaisa()
+        );
+        Trip saved = tripRepository.save(trip);
+        return mapToResponse(saved);
+    }
+
+    /** Retrieves trip details by ID. */
+    @Transactional(readOnly = true)
+    public TripResponse getTripById(Long id) {
+        Trip trip = tripRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip with id " + id + " not found"));
+        return mapToResponse(trip);
+    }
+
+    private TripResponse mapToResponse(Trip trip) {
+        return new TripResponse(
+                trip.getId(),
+                trip.getVehicle().getId(),
+                trip.getVehicle().getRegistrationNumber(),
+                trip.getStartTime(),
+                trip.getEndTime(),
+                trip.getDistanceKm(),
+                trip.isDeadLeg(),
+                trip.isHasNightCharge(),
+                trip.getWaitingMinutes(),
+                trip.getTollAmountPaisa()
+        );
+    }
+}
