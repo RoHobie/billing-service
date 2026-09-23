@@ -1,34 +1,100 @@
-# Rental Fleet Billing Service
+# Rental Fleet Billing Service & Operations Portal
 
-A backend billing microservice built with Spring Boot 3 that computes deterministic, paisa-accurate month-end invoices for rental fleet vehicles across tiered-slab, flat-rate, and fixed-monthly contracts. It features exact fee distribution via the Largest Remainder Method, application-level idempotency, mid-month contract versioning, and advisory fraud detection.
+A comprehensive commercial fleet billing microservice and operations portal built with Spring Boot 3, Redis caching, and Actuator telemetry. It computes deterministic, paisa-accurate month-end invoices for rental fleet vehicles across tiered-slab, flat-rate, and fixed-monthly contracts. Features include exact fee distribution via the Largest Remainder Method, application-level idempotency, mid-month contract versioning, advisory fraud detection, downloadable corporate PDF invoices, resilient Redis caching, and a responsive operations dashboard.
 
 ---
 
-## Quickstart (< 5 Commands)
+## Quickstart
+
+### Option A: Docker Compose (Recommended)
+
+Run the entire stack (Billing microservice + Redis) with a single command:
+
+```bash
+docker compose up --build
+```
+
+- **Operations Dashboard**: `http://localhost:8080/`
+- **Actuator Health**: `http://localhost:8080/actuator/health`
+- **H2 Audit Console**: `http://localhost:8080/h2-console`
+- **Redis Cache**: `localhost:6379`
+
+### Option B: Local Maven Run
 
 ```bash
 # 1. Navigate to billing module
 cd billing
 
-# 2. Run unit and integration tests
+# 2. Run unit and integration tests (44 passing tests)
 ./mvnw test
 
 # 3. Start the application
 ./mvnw spring-boot:run
 ```
 
-The application automatically seeds demonstration data on startup via `DataLoader`, including vendors, vehicles, tiered-slab contracts, mid-month revisions, and January 2026 trips.
+*Note: If Redis is not running locally, the application automatically logs a warning and falls back gracefully to direct database queries without failing HTTP requests.*
+
+The application automatically seeds demonstration fleet data on startup via `DataLoader`, including vendors, vehicles, tiered-slab contracts, mid-month revisions, and January 2026 duty trips.
 
 ---
 
-## H2 Console Access
+## Operations Dashboard
 
-An in-memory H2 database is enabled for rapid development and audit inspection:
+Served directly from the backend on port 8080:
 
-- **URL**: `http://localhost:8080/h2-console`
-- **JDBC URL**: `jdbc:h2:mem:fleetdb`
-- **Username**: `sa`
-- **Password**: *(leave blank)*
+- **URL**: `http://localhost:8080/`
+- **UI Architecture**: Vanilla HTML, minimal CSS, responsive layout, and vanilla JavaScript (zero external CDN or node dependencies).
+- **Business Persona**: Framed as an enterprise **Fleet Management & Billing Portal** without internal technical exposure:
+  1. **Operational Overview**: Real-time KPI cards for active fleet size, registered vendors, total billed revenue (₹), completed runs, and audit discrepancies.
+  2. **Run Settlement**: Interactive form to execute vehicle billing cycles with live results.
+  3. **Invoices & Statements**: Search historical runs, inspect full itemised line items, and download official PDF invoices.
+  4. **Fleet Registry**: Roster of vehicles, classes, and fleet vendor partners.
+  5. **Discrepancy Audit**: Dedicated inspection tool for telematics anomaly flags.
+
+---
+
+## PDF Invoicing & In-Memory Generation
+
+Official corporate PDF invoices are compiled on the fly using LibrePDF/OpenPDF:
+
+- **Endpoint**: `GET /api/billing/run/{runId}/invoice/pdf`
+- **Content-Type**: `application/pdf` (attachment header `invoice-{runId}.pdf`)
+- **Structure**:
+  - FastFleet Corporate Header and GSTIN compliance credentials
+  - Invoice metadata and vehicle asset registry block
+  - Financial breakdown card (Base Fare, Surcharges, Fixed Contract Share, Grand Total in ₹)
+  - Itemised per-trip audit table with distances, surcharges, and calculation trace notes
+  - Net-30 payment terms and accounts sign-off footer
+
+---
+
+## Redis Caching & Eviction Policies
+
+Redis provides high-speed sub-millisecond retrieval of hot operational data:
+
+| Cache Name | Key Pattern | TTL | Eviction Policy |
+|---|---|---|---|
+| `contracts` | `{vehicleId}:{tripDate}` | 15 mins | Evicted on new contract registration or slab addition (`@CacheEvict(allEntries = true)`) |
+| `vehicles` | `{id}` | 15 mins | Evicted on new vehicle registration (`@CacheEvict(allEntries = true)`) |
+| `billingSummaries` | `{runId}` | 15 mins | Evicted on new billing run execution (`@CacheEvict(allEntries = true)`) |
+
+**Graceful Degradation**: Configured with a custom `CacheErrorHandler` (`RedisConfig`). If Redis is unreachable or temporarily offline, all cache read/write operations log a warning and fallback seamlessly to database queries without throwing 500 errors to callers.
+
+---
+
+## System Monitoring & Actuator Telemetry
+
+1. **Custom Business Telemetry Endpoint**:
+   - `GET /api/monitoring/stats` (Requires `ADMIN` or `FINANCE` role)
+   - Returns real-time active vehicles, vendor count, billed revenue in paisa, completed runs, flagged anomalies, JVM memory usage (used/max MB), and system uptime seconds.
+2. **Micrometer Counters & Timers**:
+   - `fleet.billing.runs.total`: Total completed billing runs.
+   - `fleet.billing.revenue.paisa`: Cumulative revenue processed in paisa.
+   - `fleet.billing.fraud.flags`: Total advisory fraud anomalies detected.
+   - `fleet.billing.run.duration`: High-resolution execution duration timer for billing calculations.
+3. **Spring Boot Actuator**:
+   - `GET /actuator/health` (Public liveness and readiness check)
+   - `GET /actuator/metrics` (`ADMIN` access)
 
 ---
 
@@ -38,14 +104,29 @@ The service is secured with HTTP Basic Authentication and Role-Based Access Cont
 
 | User | Password | Role | Permissions |
 |---|---|---|---|
-| `admin` | `admin123` | `ADMIN` | Trigger billing runs, create master data (vendors, vehicles, contracts, slabs, trips), view bills |
-| `finance` | `finance123` | `FINANCE` | Read-only access to view bills, itemised line items, summaries, and fraud flags |
+| `admin` | `admin123` | `ADMIN` | Trigger billing runs, create master data (vendors, vehicles, contracts, slabs, trips), view bills, view metrics |
+| `finance` | `finance123` | `FINANCE` | Read-only access to view bills, itemised line items, summaries, fraud flags, and telemetry stats |
 
 ---
 
 ## Sample cURL Commands
 
-### 1. Trigger Month-End Billing Run (`ADMIN` only)
+### 1. Download Official PDF Invoice (`ADMIN` or `FINANCE`)
+
+```bash
+curl -i -X GET http://localhost:8080/api/billing/run/1/invoice/pdf \
+  -u finance:finance123 \
+  -o invoice-1.pdf
+```
+
+### 2. Retrieve Real-Time System Telemetry (`ADMIN` or `FINANCE`)
+
+```bash
+curl -i -X GET http://localhost:8080/api/monitoring/stats \
+  -u finance:finance123
+```
+
+### 3. Trigger Month-End Billing Run (`ADMIN` only)
 
 ```bash
 curl -i -X POST http://localhost:8080/api/billing/run \
@@ -54,65 +135,18 @@ curl -i -X POST http://localhost:8080/api/billing/run \
   -d '{"vehicleId": 2, "billingMonth": "2026-01"}'
 ```
 
-### 2. View Full Itemised Bill with Line Items (`FINANCE` or `ADMIN`)
+### 4. View Full Itemised Bill with Line Items (`FINANCE` or `ADMIN`)
 
 ```bash
 curl -i -X GET http://localhost:8080/api/billing/run/1 \
   -u finance:finance123
 ```
 
-### 3. View Grand Total & Summary (`FINANCE` or `ADMIN`)
-
-```bash
-curl -i -X GET http://localhost:8080/api/billing/run/1/summary \
-  -u finance:finance123
-```
-
-### 4. Inspect Advisory Fraud Flags (`FINANCE` or `ADMIN`)
+### 5. Inspect Advisory Fraud Flags (`FINANCE` or `ADMIN`)
 
 ```bash
 curl -i -X GET http://localhost:8080/api/billing/run/1/flags \
   -u finance:finance123
-```
-
-### 5. Master Data Setup (Create Vendor, Vehicle, Contract, Slabs, Trip)
-
-```bash
-# Create Vendor
-curl -i -X POST http://localhost:8080/api/vendors \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Metro Cabs Ltd", "contactEmail": "billing@metrocabs.com"}'
-
-# Create Vehicle
-curl -i -X POST http://localhost:8080/api/vehicles \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"registrationNumber": "DL-01-XY-9000", "type": "Sedan", "vendorId": 1}'
-
-# Create Tiered-Slab Contract (Effective Jan 1, 2026)
-curl -i -X POST http://localhost:8080/api/contracts \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"vehicleId": 1, "vendorId": 1, "contractType": "PER_KM", "baseAmountPaisa": 0, "freeKm": 0, "effectiveFrom": "2026-01-01", "nightChargePaisa": 500, "waitingRatePerMinutePaisa": 200}'
-
-# Add Tier 1 Slab (0-100 km @ ₹12 = 1200 paisa)
-curl -i -X POST http://localhost:8080/api/contracts/1/slabs \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"fromKm": 0, "toKm": 100, "ratePerKmPaisa": 1200}'
-
-# Add Tier 2 Slab (101-300 km @ ₹10 = 1000 paisa)
-curl -i -X POST http://localhost:8080/api/contracts/1/slabs \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"fromKm": 101, "toKm": 300, "ratePerKmPaisa": 1000}'
-
-# Record a Duty Trip
-curl -i -X POST http://localhost:8080/api/trips \
-  -u admin:admin123 \
-  -H "Content-Type: application/json" \
-  -d '{"vehicleId": 1, "startTime": "2026-01-10T09:00:00", "endTime": "2026-01-10T12:00:00", "distanceKm": 150, "isDeadLeg": false, "hasNightCharge": false, "waitingMinutes": 10, "tollAmountPaisa": 15000}'
 ```
 
 ---
@@ -144,46 +178,13 @@ Executing `POST /api/billing/run` for `(vehicleId, billingMonth)` first checks f
 
 ---
 
-## Assumptions
+## Assumptions & Design Decisions
 
-1. **Cumulative Tiered Slabs**: Slab rates apply cumulatively to total trip distance (like income tax brackets), not as a single flat rate for the entire distance.
-2. **Dead-Leg Trips in Distribution**: Dead-leg (empty repositioning) runs are included in the fixed-fee split denominator because the vehicle was operating on company duty. Dead-leg trips receive 0 base fare but receive their proportional share of fixed monthly fees.
+1. **Cumulative Tiered Slabs**: Slab rates apply cumulatively to total trip distance, not flat over the entire distance.
+2. **Dead-Leg Trips in Distribution**: Dead-leg trips receive 0 base fare but receive their proportional share of fixed monthly fees because the vehicle was occupied on company business.
 3. **Free Kilometers**: Contract free km reduce the billable trip distance before walking slabs.
 4. **Integer Distance**: Trip distance is measured in integer kilometers.
 5. **Pass-Through Tolls**: Toll fees are added at direct cost with no markup.
 6. **Impossible Distance Threshold**: Single trips with distance exceeding 500 km trigger an advisory `IMPOSSIBLE_DISTANCE` fraud flag.
 7. **Billing Month Format**: Month inputs must adhere to `YYYY-MM`.
-
----
-
-## Design Decisions & Trade-Offs
-
-- **Long Paisa vs BigDecimal for Storage**: `long` is faster, memory-efficient, and guarantees integer precision. `BigDecimal` is restricted to division operations.
-- **`effectiveFrom` on Contract vs Separate Versioning Join Table**: Using `effectiveFrom` avoids joins, date range overlaps, and redundant version management endpoints while naturally solving mid-month rate changes.
-- **Advisory vs Blocking Fraud Flags**: Fraud flags alert finance teams without blocking bill generation, preventing business bottlenecks in the absence of a manual approval workflow.
-- **Application-Level Idempotency vs DB Unique Constraint**: Enables clean handling of retry logic for failed runs while remaining fully testable in memory. For distributed production, optimistic locking and DB constraints can be layered on.
-
----
-
-## Known Limitations
-
-- **Completed Run Invalidation**: Once marked `COMPLETED`, a run cannot be modified via API if a contract is retroactively altered (documenting for future invalidation endpoint).
-- **In-Memory H2 Persistence**: Database state resets on application shutdown.
-- **Pagination**: Line items are returned as a full list (acceptable for MVP scale; production would add Spring Data `Pageable`).
-
----
-
-## Swapping to PostgreSQL for Production
-
-To transition from H2 to PostgreSQL, simply update `pom.xml` and `application.properties`:
-
-1. Replace `com.h2database:h2` with `org.postgresql:postgresql` in `pom.xml`.
-2. Update `application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/fleetdb
-   spring.datasource.username=postgres
-   spring.datasource.password=postgres
-   spring.datasource.driver-class-name=org.postgresql.Driver
-   spring.jpa.hibernate.ddl-auto=validate
-   ```
-No Java code modifications are necessary due to Spring Data JPA abstraction.
+8. **Long Paisa vs BigDecimal for Storage**: `long` is faster, memory-efficient, and guarantees integer precision. `BigDecimal` is restricted to division operations.
