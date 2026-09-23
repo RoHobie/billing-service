@@ -123,12 +123,12 @@ class EntityCrudTest {
                 .andExpect(jsonPath("$.data.name").value("FastFleet Rentals"));
 
         // 2. POST /api/vehicles with valid vendorId -> 201, returns vendor name
-        VehicleRequest vehicleRequest = new VehicleRequest("KA-01-HH-1234", "SUV", vendorId);
+        VehicleRequest vehicleRequest = new VehicleRequest("KA-01-CRUD-1234", "SUV", vendorId);
         MvcResult vehicleResult = mockMvc.perform(post("/api/vehicles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(vehicleRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.registrationNumber").value("KA-01-HH-1234"))
+                .andExpect(jsonPath("$.data.registrationNumber").value("KA-01-CRUD-1234"))
                 .andExpect(jsonPath("$.data.vendorName").value("FastFleet Rentals"))
                 .andReturn();
 
@@ -138,7 +138,7 @@ class EntityCrudTest {
         // GET /api/vehicles/{id} -> 200
         mockMvc.perform(get("/api/vehicles/" + vehicleId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.registrationNumber").value("KA-01-HH-1234"));
+                .andExpect(jsonPath("$.data.registrationNumber").value("KA-01-CRUD-1234"));
 
         // 3. POST /api/contracts with FIXED_MONTHLY and effectiveFrom: 2026-01-01 -> 201
         ContractRequest contractRequest = new ContractRequest(
@@ -187,7 +187,7 @@ class EntityCrudTest {
                         .content(objectMapper.writeValueAsString(tripRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.distanceKm").value(45))
-                .andExpect(jsonPath("$.data.vehicleRegistrationNumber").value("KA-01-HH-1234"))
+                .andExpect(jsonPath("$.data.vehicleRegistrationNumber").value("KA-01-CRUD-1234"))
                 .andReturn();
 
         long tripId = objectMapper.readTree(tripResult.getResponse().getContentAsString())
