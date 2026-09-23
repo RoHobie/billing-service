@@ -69,6 +69,9 @@ class BillingRunServiceTest {
     @Mock
     private FraudDetectionService fraudDetectionService;
 
+    @Mock
+    private com.rohobie.billing.config.MetricsConfig metricsConfig;
+
     @InjectMocks
     private BillingRunService billingRunService;
 
@@ -118,6 +121,7 @@ class BillingRunServiceTest {
 
         verify(fraudDetectionService).scan(10L);
         verify(billLineItemRepository).saveAll(any());
+        verify(metricsConfig).recordBillingRun(org.mockito.ArgumentMatchers.eq(180000L), org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
@@ -143,6 +147,7 @@ class BillingRunServiceTest {
         // Verify zero trip fare calls and no database saves
         verify(tripBillingService, never()).computeTripFare(any());
         verify(billLineItemRepository, never()).saveAll(any());
+        verify(metricsConfig, never()).recordBillingRun(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test

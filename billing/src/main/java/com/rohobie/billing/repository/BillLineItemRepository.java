@@ -17,4 +17,7 @@ public interface BillLineItemRepository extends JpaRepository<BillLineItem, Long
     @Modifying
     @Query("DELETE FROM BillLineItem b WHERE b.billingRun.id = :billingRunId")
     void deleteByBillingRunId(@Param("billingRunId") Long billingRunId);
+
+    @Query("SELECT COALESCE(SUM(b.totalPaisa), 0) FROM BillLineItem b")
+    Long sumTotalPaisa();
 }

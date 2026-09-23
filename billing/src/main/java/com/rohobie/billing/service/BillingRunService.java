@@ -57,6 +57,7 @@ public class BillingRunService {
     private final ContractLookupService contractLookupService;
     private final FixedFeeSplitService fixedFeeSplitService;
     private final FraudDetectionService fraudDetectionService;
+    private final com.rohobie.billing.config.MetricsConfig metricsConfig;
 
     public BillingRunService(BillingRunRepository billingRunRepository,
                              BillLineItemRepository billLineItemRepository,
@@ -66,7 +67,8 @@ public class BillingRunService {
                              TripBillingService tripBillingService,
                              ContractLookupService contractLookupService,
                              FixedFeeSplitService fixedFeeSplitService,
-                             FraudDetectionService fraudDetectionService) {
+                             FraudDetectionService fraudDetectionService,
+                             com.rohobie.billing.config.MetricsConfig metricsConfig) {
         this.billingRunRepository = billingRunRepository;
         this.billLineItemRepository = billLineItemRepository;
         this.fraudFlagRepository = fraudFlagRepository;
@@ -76,6 +78,7 @@ public class BillingRunService {
         this.contractLookupService = contractLookupService;
         this.fixedFeeSplitService = fixedFeeSplitService;
         this.fraudDetectionService = fraudDetectionService;
+        this.metricsConfig = metricsConfig;
     }
 
     /**
@@ -88,6 +91,7 @@ public class BillingRunService {
     @org.springframework.cache.annotation.CacheEvict(value = "billingSummaries", allEntries = true)
     @Transactional
     public BillingRunSummary runBilling(Long vehicleId, String billingMonth) {
+        long startTimeNanos = System.nanoTime();
         logger.info("Starting billing run for vehicle ID: {} and month: {}", vehicleId, billingMonth);
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
@@ -191,6 +195,10 @@ public class BillingRunService {
         long grandTotalPaisa = lineItems.stream().mapToLong(BillLineItem::getTotalPaisa).sum();
         logger.info("Completed billing run ID: {} for vehicle ID: {} with grand total: {} paisa across {} items",
                 billingRun.getId(), vehicleId, grandTotalPaisa, lineItems.size());
+
+        if (metricsConfig != null) {
+            metricsConfig.recordBillingRun(grandTotalPaisa, System.nanoTime() - startTimeNanos);
+        }
 
         return new BillingRunSummary(billingRun.getId(), vehicleId, billingMonth,
                 billingRun.getStatus(), lineItems.size(), grandTotalPaisa);

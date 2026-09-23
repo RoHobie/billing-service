@@ -30,11 +30,14 @@ public class BillingRunController {
 
     private final BillingRunService billingRunService;
     private final FraudDetectionService fraudDetectionService;
+    private final com.rohobie.billing.service.InvoicePdfService invoicePdfService;
 
     public BillingRunController(BillingRunService billingRunService,
-                                FraudDetectionService fraudDetectionService) {
+                                FraudDetectionService fraudDetectionService,
+                                com.rohobie.billing.service.InvoicePdfService invoicePdfService) {
         this.billingRunService = billingRunService;
         this.fraudDetectionService = fraudDetectionService;
+        this.invoicePdfService = invoicePdfService;
     }
 
     @PostMapping("/run")
@@ -59,5 +62,14 @@ public class BillingRunController {
     public ResponseEntity<ApiResponse<java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse>>> getBillingRunFlags(@PathVariable Long runId) {
         java.util.List<com.rohobie.billing.dto.response.FraudFlagResponse> flags = fraudDetectionService.getFlagsForRun(runId);
         return ResponseEntity.ok(ApiResponse.of(flags));
+    }
+
+    @GetMapping("/run/{runId}/invoice/pdf")
+    public ResponseEntity<byte[]> downloadInvoicePdf(@PathVariable Long runId) {
+        byte[] pdfBytes = invoicePdfService.generateInvoicePdf(runId);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"invoice-" + runId + ".pdf\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
     }
 }
