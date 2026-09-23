@@ -38,6 +38,7 @@ public class ContractLookupService {
      * @return the active Contract
      * @throws ResourceNotFoundException if no contract is active for the vehicle on that date
      */
+    @org.springframework.cache.annotation.Cacheable(value = "contracts", key = "#vehicleId + ':' + #tripDate")
     @Transactional(readOnly = true)
     public Contract findActiveContract(Long vehicleId, LocalDate tripDate) {
         logger.debug("Looking up active contract for vehicle ID: {} on date: {}", vehicleId, tripDate);

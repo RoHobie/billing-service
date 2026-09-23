@@ -85,6 +85,7 @@ public class BillingRunService {
      * @param billingMonth the billing period in YYYY-MM format
      * @return BillingRunSummary containing run status, item count, and grand total in paisa
      */
+    @org.springframework.cache.annotation.CacheEvict(value = "billingSummaries", allEntries = true)
     @Transactional
     public BillingRunSummary runBilling(Long vehicleId, String billingMonth) {
         logger.info("Starting billing run for vehicle ID: {} and month: {}", vehicleId, billingMonth);
@@ -237,6 +238,7 @@ public class BillingRunService {
      * @param runId the billing run identifier
      * @return BillingRunSummary DTO
      */
+    @org.springframework.cache.annotation.Cacheable(value = "billingSummaries", key = "#runId")
     @Transactional(readOnly = true)
     public BillingRunSummary getBillingRunSummary(Long runId) {
         BillingRun billingRun = billingRunRepository.findById(runId)

@@ -32,6 +32,7 @@ public class VehicleService {
     }
 
     /** Registers a new vehicle under an existing vendor. */
+    @org.springframework.cache.annotation.CacheEvict(value = "vehicles", allEntries = true)
     @Transactional
     public VehicleResponse createVehicle(VehicleRequest request) {
         logger.info("Registering vehicle: {}", request.registrationNumber());
@@ -44,6 +45,7 @@ public class VehicleService {
     }
 
     /** Retrieves vehicle details by ID. */
+    @org.springframework.cache.annotation.Cacheable(value = "vehicles", key = "#id")
     @Transactional(readOnly = true)
     public VehicleResponse getVehicleById(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)

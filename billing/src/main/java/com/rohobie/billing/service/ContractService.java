@@ -48,6 +48,7 @@ public class ContractService {
     }
 
     /** Creates a new contract for a vehicle and vendor. */
+    @org.springframework.cache.annotation.CacheEvict(value = "contracts", allEntries = true)
     @Transactional
     public ContractResponse createContract(ContractRequest request) {
         logger.info("Creating contract for vehicle ID: {} and vendor ID: {}", request.vehicleId(), request.vendorId());
@@ -80,6 +81,7 @@ public class ContractService {
     }
 
     /** Adds a tiered slab to an existing contract. */
+    @org.springframework.cache.annotation.CacheEvict(value = "contracts", allEntries = true)
     @Transactional
     public ContractSlabResponse addSlab(Long contractId, ContractSlabRequest request) {
         logger.info("Adding slab fromKm: {}, toKm: {}, rate: {} to contract ID: {}",
