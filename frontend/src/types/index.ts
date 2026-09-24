@@ -6,7 +6,9 @@ export interface User {
 export interface Vehicle {
   id: number;
   registrationNumber: string;
-  vehicleType: string;
+  vehicleType?: string;
+  type?: string;
+  vendorId?: number;
   vendorName: string;
 }
 
@@ -33,6 +35,21 @@ export interface BillLineItem {
   fixedFeeSharePaisa: number;
   totalPaisa: number;
   computationNote: string;
+  distanceKm?: number;
+  startTime?: string;
+}
+
+export interface TripRecord {
+  id: number;
+  vehicleId: number;
+  vehicleRegistrationNumber: string;
+  startTime: string;
+  endTime: string;
+  distanceKm: number;
+  isDeadLeg: boolean;
+  hasNightCharge: boolean;
+  waitingMinutes: number;
+  tollAmountPaisa: number;
 }
 
 export interface FraudFlag {

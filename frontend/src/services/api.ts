@@ -6,7 +6,8 @@ import {
   BillLineItem,
   FraudFlag,
   SystemStats,
-  Page
+  Page,
+  TripRecord
 } from '../types';
 
 let currentAuthHeader: string | null = sessionStorage.getItem('billing_auth_header');
@@ -113,16 +114,26 @@ export const api = {
     return apiFetch<SystemStats>('/api/monitoring/stats');
   },
 
-  async getVehicles(): Promise<Vehicle[]> {
-    return apiFetch<Vehicle[]>('/api/vehicles');
+  async getVehicles(vendorId?: number): Promise<Vehicle[]> {
+    const url = vendorId ? `/api/vehicles?vendorId=${vendorId}` : '/api/vehicles';
+    return apiFetch<Vehicle[]>(url);
+  },
+
+  async getVehiclesByVendor(vendorId: number): Promise<Vehicle[]> {
+    return apiFetch<Vehicle[]>(`/api/vendors/${vendorId}/vehicles`);
   },
 
   async getVendors(): Promise<Vendor[]> {
     return apiFetch<Vendor[]>('/api/vendors');
   },
 
-  async getBillingRuns(): Promise<BillingRunSummary[]> {
-    return apiFetch<BillingRunSummary[]>('/api/billing/runs');
+  async getBillingRuns(vehicleId?: number): Promise<BillingRunSummary[]> {
+    const url = vehicleId ? `/api/billing/runs?vehicleId=${vehicleId}` : '/api/billing/runs';
+    return apiFetch<BillingRunSummary[]>(url);
+  },
+
+  async getTripsByVehicle(vehicleId: number): Promise<TripRecord[]> {
+    return apiFetch<TripRecord[]>(`/api/trips?vehicleId=${vehicleId}`);
   },
 
   async runBilling(vehicleId: number, billingMonth: string): Promise<BillingRunSummary> {

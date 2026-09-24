@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { BillingRunSummary, formatCurrency } from '../types';
+import { Vehicle, BillingRunSummary, formatCurrency } from '../types';
 
 interface SummaryPanelProps {
+  vehicle: Vehicle | null;
   summary: BillingRunSummary | null;
 }
 
-export const SummaryPanel: React.FC<SummaryPanelProps> = ({ summary }) => {
+export const SummaryPanel: React.FC<SummaryPanelProps> = ({ vehicle, summary }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -27,7 +28,7 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({ summary }) => {
     }
   };
 
-  if (!summary) {
+  if (!vehicle) {
     return (
       <div className="panel">
         <div className="panel-header">
@@ -35,7 +36,33 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({ summary }) => {
           <span className="panel-tag">Financial Ledger</span>
         </div>
         <div className="empty-state">
-          No settlement run selected. Please generate or select an existing statement.
+          No fleet vehicle selected. Please select a vehicle from Panel A.
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="panel">
+        <div className="panel-header">
+          <h2 className="panel-title">Panel B: Statement Summary</h2>
+          <span className="panel-tag">Financial Ledger</span>
+        </div>
+        <div className="vehicle-banner">
+          <div>
+            <div className="vehicle-banner-title">{vehicle.registrationNumber}</div>
+            <div className="vehicle-banner-sub">
+              {vehicle.vehicleType || vehicle.type || 'Commercial Fleet'} &bull; {vehicle.vendorName}
+            </div>
+          </div>
+          <span className="badge badge-warning">Unsettled</span>
+        </div>
+        <div className="empty-state" style={{ marginTop: '16px' }}>
+          No settlement statement generated yet for vehicle <strong>{vehicle.registrationNumber}</strong>.
+          <p style={{ marginTop: '6px', fontSize: '0.8125rem' }}>
+            Click <em>&quot;Generate Settlement Statement&quot;</em> in Panel A to compute base slabs, mid-month contract changes, surcharges, and fixed fee splits.
+          </p>
         </div>
       </div>
     );
@@ -50,7 +77,17 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({ summary }) => {
 
       {downloadError && <div className="error-banner">{downloadError}</div>}
 
-      <div className="summary-grid">
+      <div className="vehicle-banner">
+        <div>
+          <div className="vehicle-banner-title">{vehicle.registrationNumber}</div>
+          <div className="vehicle-banner-sub">
+            {vehicle.vehicleType || vehicle.type || 'Commercial Fleet'} &bull; {vehicle.vendorName}
+          </div>
+        </div>
+        <span className="badge badge-success">Audited</span>
+      </div>
+
+      <div className="summary-grid" style={{ marginTop: '14px' }}>
         <div className="summary-item">
           <div className="summary-item-label">Statement Reference</div>
           <div className="summary-item-value">Run #{summary.runId}</div>
