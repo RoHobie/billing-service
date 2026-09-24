@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface BillingRunRepository extends JpaRepository<BillingRun, Long> {
 
     Optional<BillingRun> findByVehicleIdAndBillingMonth(Long vehicleId, String billingMonth);
+
+    java.util.List<BillingRun> findByVehicleIdOrderByRunAtDesc(Long vehicleId);
 }

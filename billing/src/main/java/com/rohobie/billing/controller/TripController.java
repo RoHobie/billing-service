@@ -33,4 +33,13 @@ public class TripController {
         TripResponse response = tripService.getTripById(id);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<java.util.List<TripResponse>>> getTrips(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long vehicleId) {
+        java.util.List<TripResponse> trips = (vehicleId != null)
+                ? tripService.getTripsByVehicle(vehicleId)
+                : java.util.List.of();
+        return ResponseEntity.ok(ApiResponse.of(trips));
+    }
 }

@@ -59,6 +59,17 @@ public class TripService {
         return mapToResponse(trip);
     }
 
+    /** Retrieves all trips for a specific vehicle ordered by start time. */
+    @Transactional(readOnly = true)
+    public java.util.List<TripResponse> getTripsByVehicle(Long vehicleId) {
+        if (!vehicleRepository.existsById(vehicleId)) {
+            throw new ResourceNotFoundException("Vehicle with id " + vehicleId + " not found");
+        }
+        return tripRepository.findByVehicleIdOrderByStartTimeAsc(vehicleId).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private TripResponse mapToResponse(Trip trip) {
         return new TripResponse(
                 trip.getId(),

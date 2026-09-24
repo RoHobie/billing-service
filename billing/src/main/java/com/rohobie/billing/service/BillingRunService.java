@@ -226,7 +226,9 @@ public class BillingRunService {
                 item.getExtraChargesPaisa(),
                 item.getFixedFeeSharePaisa(),
                 item.getTotalPaisa(),
-                item.getComputationNote()
+                item.getComputationNote(),
+                item.getTrip().getDistanceKm(),
+                item.getTrip().getStartTime() != null ? item.getTrip().getStartTime().toString() : null
         )).collect(Collectors.toList());
 
         long grandTotalPaisa = itemResponses.stream().mapToLong(BillLineItemResponse::totalPaisa).sum();
@@ -288,7 +290,9 @@ public class BillingRunService {
                         item.getExtraChargesPaisa(),
                         item.getFixedFeeSharePaisa(),
                         item.getTotalPaisa(),
-                        item.getComputationNote()
+                        item.getComputationNote(),
+                        item.getTrip().getDistanceKm(),
+                        item.getTrip().getStartTime() != null ? item.getTrip().getStartTime().toString() : null
                 ));
     }
 
@@ -317,6 +321,22 @@ public class BillingRunService {
         return billingRunRepository.findAll().stream()
                 .map(run -> getBillingRunSummary(run.getId()))
                 .sorted((a, b) -> b.runId().compareTo(a.runId()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves all recorded billing run summaries for a specific vehicle.
+     *
+     * @param vehicleId the vehicle identifier
+     * @return List of BillingRunSummary DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<BillingRunSummary> getBillingRunsByVehicle(Long vehicleId) {
+        if (!vehicleRepository.existsById(vehicleId)) {
+            throw new ResourceNotFoundException("Vehicle with id " + vehicleId + " not found");
+        }
+        return billingRunRepository.findByVehicleIdOrderByRunAtDesc(vehicleId).stream()
+                .map(run -> getBillingRunSummary(run.getId()))
                 .collect(Collectors.toList());
     }
 }

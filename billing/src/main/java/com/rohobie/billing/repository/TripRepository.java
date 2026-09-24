@@ -11,4 +11,6 @@ import java.util.List;
 public interface TripRepository extends JpaRepository<Trip, Long> {
     List<Trip> findByVehicleIdAndStartTimeBetweenOrderByStartTimeAsc(
             Long vehicleId, LocalDateTime startInclusive, LocalDateTime endInclusive);
+
+    List<Trip> findByVehicleIdOrderByStartTimeAsc(Long vehicleId);
 }

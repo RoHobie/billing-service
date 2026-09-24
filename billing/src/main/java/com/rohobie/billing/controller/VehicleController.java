@@ -31,8 +31,11 @@ public class VehicleController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles() {
-        List<VehicleResponse> vehicles = vehicleService.getAllVehicles();
+    public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long vendorId) {
+        List<VehicleResponse> vehicles = (vendorId != null)
+                ? vehicleService.getVehiclesByVendorId(vendorId)
+                : vehicleService.getAllVehicles();
         return ResponseEntity.ok(ApiResponse.of(vehicles));
     }
 

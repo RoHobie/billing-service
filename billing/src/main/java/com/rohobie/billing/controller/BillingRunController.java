@@ -59,8 +59,11 @@ public class BillingRunController {
     }
 
     @GetMapping("/runs")
-    public ResponseEntity<ApiResponse<List<BillingRunSummary>>> getAllBillingRuns() {
-        List<BillingRunSummary> runs = billingRunService.getAllBillingRuns();
+    public ResponseEntity<ApiResponse<List<BillingRunSummary>>> getAllBillingRuns(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long vehicleId) {
+        List<BillingRunSummary> runs = (vehicleId != null)
+                ? billingRunService.getBillingRunsByVehicle(vehicleId)
+                : billingRunService.getAllBillingRuns();
         return ResponseEntity.ok(ApiResponse.of(runs));
     }
 

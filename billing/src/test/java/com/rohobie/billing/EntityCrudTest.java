@@ -140,6 +140,16 @@ class EntityCrudTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.registrationNumber").value("KA-01-CRUD-1234"));
 
+        // GET /api/vendors/{id}/vehicles -> 200
+        mockMvc.perform(get("/api/vendors/" + vendorId + "/vehicles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].registrationNumber").value("KA-01-CRUD-1234"));
+
+        // GET /api/vehicles?vendorId={id} -> 200
+        mockMvc.perform(get("/api/vehicles?vendorId=" + vendorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].registrationNumber").value("KA-01-CRUD-1234"));
+
         // 3. POST /api/contracts with FIXED_MONTHLY and effectiveFrom: 2026-01-01 -> 201
         ContractRequest contractRequest = new ContractRequest(
                 vehicleId, vendorId, ContractType.FIXED_MONTHLY,
@@ -197,6 +207,16 @@ class EntityCrudTest {
         mockMvc.perform(get("/api/trips/" + tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.distanceKm").value(45));
+
+        // GET /api/trips?vehicleId={id} -> 200
+        mockMvc.perform(get("/api/trips?vehicleId=" + vehicleId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].distanceKm").value(45));
+
+        // GET /api/billing/runs?vehicleId={id} -> 200
+        mockMvc.perform(get("/api/billing/runs?vehicleId=" + vehicleId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
 
         // 6. Unknown id -> 404 with error body
         mockMvc.perform(get("/api/vendors/99999"))

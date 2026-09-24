@@ -63,6 +63,17 @@ public class VehicleService {
                 .toList();
     }
 
+    /** Retrieves all vehicles associated with a specific vendor. */
+    @Transactional(readOnly = true)
+    public List<VehicleResponse> getVehiclesByVendorId(Long vendorId) {
+        if (!vendorRepository.existsById(vendorId)) {
+            throw new ResourceNotFoundException("Vendor with id " + vendorId + " not found");
+        }
+        return vehicleRepository.findByVendorId(vendorId).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private VehicleResponse mapToResponse(Vehicle vehicle) {
         return new VehicleResponse(
                 vehicle.getId(),
