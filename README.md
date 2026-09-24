@@ -151,44 +151,98 @@ The service is secured with HTTP Basic Authentication and Role-Based Access Cont
 
 ---
 
-## Sample cURL Commands
+## Comprehensive cURL Demonstration Commands
 
-### 1. Download Official PDF Invoice (`ADMIN` or `FINANCE`)
+All endpoints are secured via HTTP Basic Authentication. Credentials:
+- **Admin**: `admin:admin123` (Role: `ADMIN`)
+- **Finance**: `finance:finance123` (Role: `FINANCE`)
 
+### 1. System Health & Real-Time Business Telemetry
 ```bash
-curl -i -X GET http://localhost:8080/api/billing/run/1/invoice/pdf \
-  -u finance:finance123 \
-  -o invoice-1.pdf
+# Public Actuator health check
+curl -s http://localhost:8080/actuator/health
+
+# Real-time fleet KPI telemetry (active vehicles, billed revenue, completed runs)
+curl -s -u finance:finance123 http://localhost:8080/api/monitoring/stats
 ```
 
-### 2. Retrieve Real-Time System Telemetry (`ADMIN` or `FINANCE`)
-
+### 2. Fleet Master Data Inspection
 ```bash
-curl -i -X GET http://localhost:8080/api/monitoring/stats \
-  -u finance:finance123
+# List all registered vendors
+curl -s -u finance:finance123 http://localhost:8080/api/vendors
+
+# List all vehicles in the fleet
+curl -s -u finance:finance123 http://localhost:8080/api/vehicles
+
+# View unbilled/seeded trips for Vehicle 1 (Jan 2026)
+curl -s -u finance:finance123 "http://localhost:8080/api/trips?vehicleId=1"
 ```
 
-### 3. Trigger Month-End Billing Run (`ADMIN` only)
-
+### 3. Trigger Month-End Settlement Runs (`ADMIN` role)
 ```bash
-curl -i -X POST http://localhost:8080/api/billing/run \
+# Scenario A: Tiered Slabs with Mid-Month Contract Revision (Vehicle 1, Jan 2026)
+# Trips before Jan 15 use Jan 1 rates; trips from Jan 15 use updated rates
+curl -s -X POST http://localhost:8080/api/billing/run \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"vehicleId": 1, "billingMonth": "2026-01"}'
+
+# Scenario B: Fixed Monthly Fee Split via Largest Remainder Method (Vehicle 2, Jan 2026)
+# Distributes ₹30,000 across 10 trips down to the exact paisa (including dead-leg trips)
+curl -s -X POST http://localhost:8080/api/billing/run \
   -u admin:admin123 \
   -H "Content-Type: application/json" \
   -d '{"vehicleId": 2, "billingMonth": "2026-01"}'
 ```
 
-### 4. View Full Itemised Bill with Line Items (`FINANCE` or `ADMIN`)
-
+### 4. Idempotency & Concurrency Safety Verification
 ```bash
-curl -i -X GET http://localhost:8080/api/billing/run/1 \
-  -u finance:finance123
+# Re-running an already completed billing run returns existing summary with zero duplicate computation
+curl -s -X POST http://localhost:8080/api/billing/run \
+  -u admin:admin123 \
+  -H "Content-Type: application/json" \
+  -d '{"vehicleId": 1, "billingMonth": "2026-01"}'
 ```
 
-### 5. Inspect Advisory Fraud Flags (`FINANCE` or `ADMIN`)
-
+### 5. Audit Itemised Line Items & Paginated Ledger
 ```bash
-curl -i -X GET http://localhost:8080/api/billing/run/1/flags \
-  -u finance:finance123
+# View summary card for a billing run
+curl -s -u finance:finance123 http://localhost:8080/api/billing/run/1/summary
+
+# Paginated line items (first page of 5 items with slab walk trace notes)
+curl -s -u finance:finance123 "http://localhost:8080/api/billing/run/1/items?page=0&size=5"
+
+# Full itemised bill with all trips and financial breakdown
+curl -s -u finance:finance123 http://localhost:8080/api/billing/run/1
+```
+
+### 6. Advisory Fraud & Compliance Inspection
+```bash
+# Inspect advisory fraud flags for billing run 2 (Vehicle 7: single trip > 500 km)
+curl -s -u finance:finance123 http://localhost:8080/api/billing/run/2/flags
+```
+
+### 7. Download Corporate PDF Tax Invoice
+```bash
+# Generate and download byte-exact corporate PDF invoice
+curl -s -u finance:finance123 \
+  http://localhost:8080/api/billing/run/1/invoice/pdf \
+  -o invoice-run-1.pdf
+```
+
+### 8. Security & RBAC Enforcement
+```bash
+# Verify 401 Unauthorized when unauthenticated
+curl -i http://localhost:8080/api/billing/runs
+
+# Verify 403 Forbidden when FINANCE user attempts to trigger a billing run
+curl -i -X POST http://localhost:8080/api/billing/run \
+  -u finance:finance123 \
+  -H "Content-Type: application/json" \
+  -d '{"vehicleId": 1, "billingMonth": "2026-01"}'
+
+# Verify current identity and permissions
+curl -s -u admin:admin123 http://localhost:8080/api/auth/me
 ```
 
 ---
@@ -250,24 +304,6 @@ For fleets logging thousands of trips per month, line items can be retrieved in 
 - **Response**: Standard Spring Data Page structure containing `content` array of `BillLineItemResponse`, `totalPages`, `totalElements`, `size`, and `number`.
 
 Full non-paginated bill data remains available at `GET /api/billing/run/{runId}` for compliance archiving and PDF generation.
-
----
-
-## Operations Dashboard & Business Landing Page
-
-The microservice includes a minimal React and TypeScript frontend served on the same port at `http://localhost:8080/`.
-
-- **Access**: Open `http://localhost:8080/` in any modern web browser.
-- **Role Switching**: Role changes are executed via logging out and logging in:
-  - **Administrator Quick-Fill**: Access with full settlement execution and master data privileges.
-  - **Finance Quick-Fill**: Access with statement inspection, audit verification, and PDF invoice generation privileges.
-  - **Partner Self-Registration**: Commercial vendors can register an account directly on the landing page, automatically receiving default review privileges.
-- **Operational Interface**:
-  - **KPI Telemetry Bar**: Auto-refreshing business figures covering active vehicles, commercial partners, generated settlement runs, total invoiced revenue, and operational status.
-  - **Panel A (Settlement Selection)**: Vehicle selector, billing month input, settlement statement generation.
-  - **Panel B (Statement Summary)**: Verified line items, grand total in Indian Rupees (`₹`), and one-click PDF tax invoice download.
-  - **Panel C (Compliance & Audit Verification)**: Real-time display of advisory audit flags (duplicate trips, distance threshold exceedances).
-  - **Panel D (Itemised Trip Ledger)**: Paginated trip line items with base fares, dynamic surcharges, fixed fee allocations, and mathematical calculation notes.
 
 ---
 
